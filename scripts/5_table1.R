@@ -2,6 +2,7 @@
 
 ## Libraries
 library(tableone)
+library(dplyr)
 
 ## Output folder
 resultsfolder <- "results/table1"
@@ -57,6 +58,9 @@ loadings <- loadings %>% filter(Variables %in% c("TotalCalories", "SodiumInt")) 
         )
 ggsave(pcadiet, filename = "results/table1/PCA_diet_loading.pdf", device = "pdf", width = 5, height = 5)
 ggsave(pcadiet, filename = "results/table1/PCA_diet_loading.svg", device = "svg", width = 5, height = 5)
+
+df <- left_join(df_new, pc2, by = c("ID", "Site")) %>% select(everything(.), DietPC1=PC1, DietPC2=PC2)
+saveRDS(df, "data/clinicaldata_pcdiet.RDS")
 
 pl1 <- ggplot(df_diet, aes(x=Site, y=TotalCalories))+
     geom_violin(aes(fill=Site))+
