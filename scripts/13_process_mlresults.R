@@ -9,7 +9,7 @@ library(forcats)
 
 source("scripts/functions.R")
 
-path_true <- 'rural_urban/output_XGB_class_rural_urban_2024_01_04__00-26-33'
+path_true <- 'rural_urban/output_XGB_class_rural_urban_2024_01_14__00-47-28'
 # path_permuted <- 'rural_urban/_PERMUTED'
 data_path <- 'rural_urban/input_data'
 labels <- c("Urban", "Rural")
