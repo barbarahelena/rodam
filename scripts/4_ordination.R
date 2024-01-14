@@ -79,14 +79,13 @@ print('plotting..')
 (braycurt <- dbray %>% 
     ggplot(aes(Axis.1, Axis.2)) +
     geom_point(aes(color = Site), size = 1, alpha = 0.7) +
-    ggtitle("PCoA Bray-Curtis distance") +
     xlab(paste0('PCo1 (', round(expl_variance_bray[1], digits = 1),'%)')) +
     ylab(paste0('PCo2 (', round(expl_variance_bray[2], digits = 1),'%)')) +
     scale_color_manual(values = pal_futurama()(4)[c(3,4)]) +
+    scale_fill_manual(values = pal_futurama()(4)[c(3,4)], guide = "none") +
     theme_Publication() +
-    guides(fill = guide_legend(override.aes = list(shape = 21, size = 2))) +
-    labs(color = "") +
-    stat_ellipse(aes(color = Site), type = "norm") + 
+    labs(color = "", fill = "", title = "PCoA Bray-Curtis distance") +
+    stat_ellipse(geom = "polygon", aes(color = Site, fill = Site), type = "norm", alpha = 0.2) + 
     annotate("text", x= Inf, y = Inf, hjust = 1, vjust = 1,
              label = str_c("PERMANOVA: p = ", res1$`Pr(>F)`, ", r2 = ", format(round(res1$R2[1],3), nsmall = 3))))
 ggsave(braycurt, filename = "results/ordination/PCoA_BrayCurtis.pdf", device = "pdf", width = 5, height = 5)
@@ -111,14 +110,13 @@ print('plotting..')
 (unifracpl <- dfpc %>% 
     ggplot(aes(Axis.1, Axis.2)) +
     geom_point(aes(color = Site), size = 1, alpha = 0.7) +
-    xlab(paste0('PCo1 (', round(expl_var_wu[1], digits = 1),'%)')) +
-    ylab(paste0('PCo2 (', round(expl_var_wu[2], digits = 1),'%)')) +
     theme_Publication() +
+    stat_ellipse(geom = "polygon", aes(color = Site, fill = Site), type = "norm", alpha = 0.2) + 
     scale_color_manual(values = pal_futurama()(4)[c(3,4)]) +
-    ggtitle('PCoA Weighted UniFrac') +
-    guides(fill = guide_legend(override.aes = list(shape = 21, size = 2))) +
-    labs(color = "") +
-    stat_ellipse(aes(color = Site), type = "norm") + 
+    scale_fill_manual(values = pal_futurama()(4)[c(3,4)], guide = "none") +
+    labs(title = 'PCoA Weighted UniFrac', color = "", fill = "",
+         x = paste0('PCo1 (', round(expl_var_wu[1], digits = 1),'%)'),
+         y = paste0('PCo2 (', round(expl_var_wu[2], digits = 1),'%)')) +
     annotate("text", x= Inf, y = Inf, hjust = 1, vjust = 1,
              label = str_c("PERMANOVA: p = ", res1$`Pr(>F)`, ", r2 = ", format(round(res2$R2[1],3), nsmall = 3))))
 ggsave(unifracpl, filename = "results/ordination/PCoA_WeightedUnifrac.pdf", device = "pdf", width = 5, height = 5)
