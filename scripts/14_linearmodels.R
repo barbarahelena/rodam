@@ -8,6 +8,7 @@ library(dplyr)
 library(tidyr)
 library(forcats)
 library(patchwork)
+library(compositions)
 
 ## Output folder
 resultsfolder <- "results/glm"
@@ -43,7 +44,8 @@ rodamclin <- rodamclin %>% mutate(
     Fat = case_when(ID %in% dietids ~ NA, .default = Fat),
     Fibre = case_when(ID %in% dietids ~ NA, .default = Fibre),
     Carbohydrates = case_when(ID %in% dietids ~ NA, .default = Carbohydrates),
-    SodiumInt = case_when(ID %in% dietids ~ NA, .default = SodiumInt)
+    SodiumInt = case_when(ID %in% dietids ~ NA, .default = SodiumInt),
+    AlcoholIntake = log(AlcoholIntake+0.01)
 )
 rodamotu <- as.data.frame(t(as(rodam_mb@otu_table, "matrix")))
 tax <- readRDS("data/tax_table.RDS")
@@ -52,21 +54,21 @@ best_pred <- rio::import('rural_urban/output_XGB_class_rural_urban_2024_01_04__0
 ## Preparation for models
 best_pred <- best_pred %>% arrange(-RelFeatImp) %>% slice(1:20)
 dfmb <- rodamotu %>% select(best_pred$FeatName)
-dfmb <- dfmb %>% mutate(across(everything(.), ~log10(.x + 1)))
-dfmb$ID <- rownames(dfmb)
-df <- left_join(rodamclin, dfmb, by='ID')
+dfmb2 <- as.data.frame(clr(dfmb))
+dfmb2$ID <- rownames(dfmb2)
+df <- left_join(rodamclin, dfmb2, by='ID')
 dim(df)
 colnames(df)[(ncol(df)-19):ncol(df)] <- make.unique(tax$Tax[match(colnames(df)[(ncol(df)-19):ncol(df)], tax$ASV)])
 dfmb2 <- df[(ncol(df)-19):ncol(df)]
 
 ## Regression models
 res <- c()
-for (i in c((ncol(df)-19):ncol(df))) {
+for (i in c(53:72)) {
     df$asv <- df[[i]]
     m0 <- lm(asv ~ Site, data = df)
     m1 <- lm(asv ~ Site + Age + Sex + BMI + CurrSmoking + BristolScale, data = df)
     m2 <- lm(asv ~ Site + Age + Sex + BMI + CurrSmoking + AntiHT + DMMed + AFung + LipidLowering, data = df)
-    m3 <- lm(asv ~ Site + Age + Sex + BMI + CurrSmoking + AntiHT + DMMed + AFung + LipidLowering + TotalCalories + Fibre + Fat + Proteins + Carbohydrates + SodiumInt + log10(AlcoholIntake+0.01), data = df)
+    m3 <- lm(asv ~ Site + Age + Sex + BMI + CurrSmoking + AntiHT + DMMed + AFung + LipidLowering + TotalCalories + Fibre + Fat + Proteins + Carbohydrates + SodiumInt + AlcoholIntake, data = df)
     
     taxasv <- colnames(df)[i]
     m0 <- tidy(m0, conf.int=T)[2,]
