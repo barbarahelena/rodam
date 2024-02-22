@@ -132,7 +132,7 @@ colsp <- c(cols[1:(length(lev)-2)], cols[21:22])
     labs(y="Composition (%)", x = "", title = "Species", fill = "") +
     scale_y_continuous(expand = c(0, 0)) +
     theme_composition())
-ggsave(comp_species, filename = "results/composition/composition_species.pdf", width = 6, height = 5)
+ggsave(comp_species, filename = "results/composition/composition_species.pdf", width = 8, height = 5)
 
 #### Genus-level ####
 N <- 20
@@ -183,7 +183,7 @@ comp_genus <- dx_genus %>%
     labs(y="Composition (%)", x = "", title = "Genus") +
     scale_y_continuous(expand = c(0, 0)) +
     theme_composition()
-ggsave(comp_genus, filename = "results/composition/composition_genus.pdf", width = 6, height = 5)
+ggsave(comp_genus, filename = "results/composition/composition_genus.pdf", width = 8, height = 5)
 
 #### Family level ####
 N <- 20
@@ -236,7 +236,7 @@ comp_family <- dx_family %>%
     labs(y="Composition (%)", x = "", title = "Family") +
     scale_y_continuous(expand = c(0, 0)) +
     theme_composition()
-ggsave(comp_family, filename = "results/composition/composition_family.pdf", width = 6, height = 5)
+ggsave(comp_family, filename = "results/composition/composition_family.pdf", width = 8, height = 5)
 
 
 #### Phylum level ####
@@ -295,5 +295,5 @@ ggsave(comp_phylum, filename = "results/composition/composition_phylum.pdf", wid
 pl_total <- ggarrange(comp_species, comp_genus, comp_family, comp_phylum,
                           ncol = 4, labels = c("A", "B", "C", "D"),
                           widths = c(1.6, 1.2, 1.3, 1.0))
-ggsave(pl_total, filename = "results/composition/composition_total.pdf", width = 20, height = 5)
+ggsave(pl_total, filename = "results/composition/composition_total.pdf", width = 30, height = 5)
 

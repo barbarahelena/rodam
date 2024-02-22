@@ -61,13 +61,34 @@ df_shan <- data.frame(ID = names(shannon), shannon = shannon)
 df_shan <- left_join(df_shan, df_new, by = "ID")
 (plshan <- ggplot(data = df_shan, aes(x = Site, y = shannon, fill = Site)) +
     geom_violin() +
-    scale_fill_manual(values = pal_futurama()(4)[3:4], guide = "none") +
+    scale_fill_manual(values = pal_cosmic()(4)[2:4], guide = "none") +
     geom_boxplot(width = 0.1, fill = "white", outlier.shape = NA) +
     stat_compare_means(label.y = 5.5) +
     labs(title = "Shannon index", y = "Shannon index", x="") + 
     theme_Publication())
-ggsave(plshan, filename = "results/alphadiversity/shannon.svg", width = 4, height = 5)
-ggsave(plshan, filename = "results/alphadiversity/shannon.pdf", width = 4, height = 5)
+ggsave(plshan, filename = "results/alphadiversity/shannon.svg", width = 6, height = 5)
+ggsave(plshan, filename = "results/alphadiversity/shannon.pdf", width = 6, height = 5)
+
+(plshansbp <- df_shan %>% filter(AntiHT == "No") %>% 
+        ggplot(data = ., aes(x = shannon, y = SBP, color = Site)) +
+        geom_point(alpha = 0.5)+
+        geom_smooth(method = "lm")+
+        scale_color_manual(values = pal_cosmic()(4)[2:4]) +
+        stat_cor()+
+        labs() + 
+        theme_Publication())
+(plshandbp <- df_shan %>% filter(AntiHT == "No") %>% 
+        ggplot(data = ., aes(x = shannon, y = DBP, color = Site)) +
+        geom_point(alpha = 0.5)+
+        geom_smooth(method = "lm")+
+        scale_color_manual(values = pal_cosmic()(4)[2:4]) +
+        stat_cor()+
+        labs() + 
+        theme_Publication())
+ggarrange(plshansbp, plshandbp, labels = c("A", "B"), common.legend = TRUE, 
+          legend = "bottom")
+ggsave(filename = "results/alphadiversity/shannon_bp.svg", width = 8, height = 5)
+ggsave(filename = "results/alphadiversity/shannon_bp.pdf", width = 8, height = 5)
 
 ## Species richness Urban-rural
 specrich <- specnumber(tab)
@@ -78,9 +99,9 @@ dfspec <- left_join(dfspec, df_new, by = "ID")
     geom_violin()+
     geom_boxplot(outlier.shape = NA, fill = "white", width = 0.1) +
     theme_Publication() + 
-    scale_fill_manual(values = pal_futurama()(4)[3:4], guide = "none") + 
+    scale_fill_manual(values = pal_cosmic()(4)[2:4], guide = "none") + 
     labs(title = "Species richness", y = "Number of species", x = "") +
-    stat_compare_means(method = "wilcox.test", label.y = 800))
+    stat_compare_means(label.y = 800))
 ggsave(plrich, filename = "results/alphadiversity/richness.pdf", width = 4, height = 5)
 ggsave(plrich, filename = "results/alphadiversity/richness.svg", width = 4, height = 5)
 
@@ -94,9 +115,9 @@ dffai <- left_join(dffai, df_new, by = "ID")
     geom_violin()+
     geom_boxplot(outlier.shape = NA, fill = "white", width = 0.1) +
     theme_Publication() + 
-    scale_fill_manual(values = pal_futurama()(4)[3:4], guide = "none") + 
+    scale_fill_manual(values = pal_cosmic()(4)[2:4], guide = "none") + 
     labs(title = "Faith's PD", y = "Faith's phylogenetic diversity", x = "") +
-    stat_compare_means(method = "wilcox.test", label.y = 80))
+    stat_compare_means(label.y = 80))
 ggsave(plfaith, filename = "results/alphadiversity/faiths.pdf", device = "pdf", width = 4, height = 5)
 ggsave(plfaith, filename = "results/alphadiversity/faiths.svg", device = "svg", width = 4, height = 5)
 

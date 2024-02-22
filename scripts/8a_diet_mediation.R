@@ -8,6 +8,43 @@ library(dplyr)
 library(tidyr)
 library(forcats)
 library(patchwork)
+library(compositions)
+library(broom)
+library(ggplot2)
+
+theme_Publication <- function(base_size=14, base_family="sans") {
+    library(grid)
+    library(ggthemes)
+    library(stringr)
+    (theme_foundation(base_size=base_size, base_family=base_family)
+        + theme(plot.title = element_text(face = "bold",
+                                          size = rel(1.0), hjust = 0.5),
+                text = element_text(),
+                panel.background = element_rect(colour = NA),
+                plot.background = element_rect(colour = NA),
+                panel.border = element_rect(colour = NA),
+                axis.title = element_text(face = "bold",size = rel(0.8)),
+                axis.title.y = element_text(angle=90, vjust =2),
+                axis.title.x = element_text(vjust = -0.2),
+                axis.text = element_text(size = rel(0.7)),
+                axis.text.x = element_text(angle = 0), 
+                axis.line = element_line(colour="black"),
+                axis.ticks = element_line(),
+                panel.grid.major = element_line(colour="#f0f0f0"),
+                panel.grid.minor = element_blank(),
+                legend.key = element_rect(colour = NA),
+                legend.position = "bottom",
+                # legend.direction = "horizontal",
+                legend.key.size= unit(0.2, "cm"),
+                legend.spacing  = unit(0, "cm"),
+                # legend.title = element_text(face="italic"),
+                plot.margin=unit(c(10,5,5,5),"mm"),
+                strip.background=element_rect(colour="#f0f0f0",fill="#f0f0f0"),
+                strip.text = element_text(face="bold"),
+                plot.caption = element_text(size = rel(0.5), face = "italic")
+        ))
+    
+} 
 
 ## Output folder
 resultsfolder <- "results/glm_clr"
@@ -20,23 +57,14 @@ afronden3 <- function(x) return(as.numeric(format(round(x, 3),3)))
 ## Opening RODAM file
 rodam_mb <- readRDS("data/phyloseq_sampledata.RDS")
 rodamclin <- readRDS("data/clinicaldata_pcdiet.RDS")
-dietids <- c("G0421", "G2545")
-rodamclin <- rodamclin %>% mutate(
-    TotalCalories = case_when(ID %in% dietids ~ NA, .default = TotalCalories),
-    Proteins = case_when(ID %in% dietids ~ NA, .default = Proteins),
-    Fat = case_when(ID %in% dietids ~ NA, .default = Fat),
-    Fibre = case_when(ID %in% dietids ~ NA, .default = Fibre),
-    Carbohydrates = case_when(ID %in% dietids ~ NA, .default = Carbohydrates),
-    SodiumInt = case_when(ID %in% dietids ~ NA, .default = SodiumInt),
-    AlcoholIntake = log(AlcoholIntake+0.01)
-)
 rodamotu <- as.data.frame(t(as(rodam_mb@otu_table, "matrix")))
 tax <- readRDS("data/tax_table.RDS")
 best_pred <- rio::import('rural_urban/output_XGB_class_rural_urban_2024_01_14__00-47-28/feature_importance.txt')
 
 ## Preparation for models
 best_pred <- best_pred %>% arrange(-RelFeatImp) %>% slice(1:20)
-dfmb <- rodamotu %>% select(best_pred$FeatName)
+otus <- best_pred$FeatName
+dfmb <- rodamotu %>% dplyr::select(all_of(otus))
 dfmb2 <- as.data.frame(clr(dfmb+1))
 dfmb2$ID <- rownames(dfmb2)
 df <- left_join(rodamclin, dfmb2, by='ID')
@@ -96,7 +124,7 @@ res_asvs <- c()
 for (i in c(31:37)) {
     df$diet <- scale(df[[i]])
     dietfactor <- colnames(df)[i]
-    for(j in c(55:74)){
+    for(j in c(55:59)){
         df$asv <- df[[j]]
         taxasv <- colnames(df)[j]
         m0 <- lm(asv ~ diet, data = df)
@@ -142,16 +170,16 @@ res_asvs3 <- res_asvs2 %>%
         theme_Publication()+
         theme(legend.position = "bottom")+
         labs(title = "Dietary factors and ASVs",
-             x = "", y = "Difference (log10 counts) for SD increase in dietary factor", shape = "", color = "") +
+             x = "", y = "Difference (CLR transformed counts) for SD increase in dietary factor", shape = "", color = "") +
         scale_color_cosmic(guide = "none") +
         coord_flip() +
-        facet_wrap(~Diet, nrow = 2))
-ggsave("results/glm_clr/lm_asvdiet.pdf", width = 11, height = 9)
-ggsave("results/glm_clr/lm_asvdiet.svg", width = 11, height = 9)
+        facet_wrap(~Diet, nrow = 1))
+ggsave("results/glm_clr/lm_asvdiet_s.pdf", width = 12, height = 4)
+ggsave("results/glm_clr/lm_asvdiet_s.svg", width = 12, height = 4)
 
 ## Step 4: location and ASVs
 restotal <- c()
-for (i in c(55:74)) {
+for (i in c(55:59)) {
     df$asv <- df[[i]]
     m0 <- lm(asv ~ Site, data = df)
     m1 <- lm(asv ~ Site + Proteins, data = df)
@@ -219,15 +247,15 @@ restotal3 <- restotal2 %>%
         theme_Publication()+
         theme(legend.position = "bottom")+
         labs(title = "ASVs with differential abundance between geographical locations",
-             x = "", y = "Difference (log10-transformed counts) for urban location", shape = "", color = "") +
+             x = "", y = "Difference (CLR-transformed counts) for urban location", shape = "", color = "") +
         scale_color_cosmic() +
         coord_flip())
-ggsave("results/glm_clr/lm_compl_diet.pdf", width = 9, height = 10)
-ggsave("results/glm_clr/lm_compl_diet.svg", width = 9, height = 10)
+ggsave("results/glm_clr/lm_compl_diet.pdf", width = 9, height = 5)
+ggsave("results/glm_clr/lm_compl_diet.svg", width = 9, height = 5)
 
 ## Step 4: diet and ASVs
 restotal <- c()
-for (i in c(55:60)) {
+for (i in c(55:59)) {
     df$asv <- df[[i]]
     taxasv <- colnames(df)[i]
     for(j in c(32,34,35,37)){
@@ -258,7 +286,7 @@ restotal2 <- restotal %>%
         `m1-q` = p.adjust(`m1-p`, 'fdr')
     ) %>% 
     mutate_at(c(6,10), afronden3)
-openxlsx::write.xlsx(restotal2, "results/glm_clr/lm_compl_diet_s.xlsx")
+openxlsx::write.xlsx(restotal2, "results/glm_clr/lm_compl_more.xlsx")
 
 restotal3 <- restotal2 %>% 
     pivot_longer(c(3:12), names_to=c("model", "cat"), 
@@ -274,18 +302,19 @@ restotal3 <- restotal2 %>%
            sigq = case_when(q < 0.05 ~ paste0("q<0.05"), q >= 0.05 ~ paste0("not sig")),
            sigq = as.factor(sigq))
 
-(pltotaal <- ggplot(restotal3, aes(x=ASV, y=est, color=model, shape = sigq)) +
+(pltotaal <- restotal3 %>% filter(Diet == "SodiumInt") %>% 
+        ggplot(., aes(x=ASV, y=est, color=model, shape = sigq)) +
         geom_hline(yintercept = 0, color = "grey40") +
         geom_point(position=position_dodge(-0.7)) +
-        scale_shape_manual(values = c(21,19))+
+        scale_shape_manual(values = c(21,19), guide = "none")+
         # scale_y_continuous(breaks = c(-2:8))+
         geom_errorbar(aes(ymin=l95,ymax=u95,width=.3), position=position_dodge(-0.7)) +
         theme_Publication()+
         theme(legend.position = "bottom")+
-        labs(title = "ASVs with differential abundance between geographical locations",
-             x = "", y = "Difference (log10-transformed counts) for SD increase in macronutrient group", shape = "", color = "") +
+        labs(title = "ASVs with differential abundance between sites",
+             x = "", y = "CLR-change in ASV for +1 SD in sodium", shape = "", color = "") +
         scale_color_cosmic() +
         coord_flip()+
-        facet_wrap(~Diet))
-ggsave("results/glm_clr/lm_compl_diet_2.pdf", width = 9, height = 8)
-ggsave("results/glm_clr/lm_compl_diet_2.svg", width = 9, height = 8)
+        facet_wrap(~Diet, nrow = 1))
+ggsave("results/glm_clr/lm_compl_salt.pdf", width = 5, height = 5)
+ggsave("results/glm_clr/lm_compl_salt.svg", width = 5, height = 5)

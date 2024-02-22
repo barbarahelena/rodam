@@ -1,4 +1,4 @@
-# create XGB input files for BP and salt models
+# create XGB input files for aldosterone and renin models
 
 library(dplyr)
 library(phyloseq)
@@ -34,53 +34,54 @@ write_y <- function(x, name_y, data_path){
 }
 
 
-## Open dataframe
-df <- readRDS('data/clinicaldata.RDS')
+## Open ADC dataframe
+df <- readRDS('data/clinicaldata.RDS') %>% filter(Site %in% c("Urban Ghana", "Amsterdam"))
 head(df)
-any(is.na(df$SodiumInt)) # TRUE
-dfsalt <- df %>% filter(!is.na(df$SodiumInt) & !is.na(df$SBP) & !is.na(DBP))
-dfsalt <- dfsalt %>% dplyr::select(ID, SBP, DBP, SodiumInt)
+any(is.na(df$Site)) # FALSE
+df$Site <- case_when(
+                df$Site=="Urban Ghana" ~ 0,
+                df$Site=="Amsterdam" ~ 1)
+summary(as.factor(df$Site))
+df <- df %>% dplyr::select(ID, Site)
 
 ## Open RDS file with OTU table
 mb <- readRDS('data/phyloseq_sampledata.RDS')
-mb <- prune_samples(dfsalt$ID, mb)
+mb <- prune_samples(sample_names(mb) %in% df$ID, mb)
 otu <- t(as(mb@otu_table, "matrix"))
-tk <- apply(otu, 2, function(x) sum(x > 5) > (0.2*length(x)))
+tk <- apply(otu, 2, function(x) sum(x > 10) > (0.30*length(x)))
 mbdf <- otu[,tk]
-dim(mbdf)
+# dim(mbdf)
+# gghistogram(mbdf[,6], bins = 30)
 mbdf <- as.data.frame(mbdf)
+dim(mbdf)
+
+# rownames(df) <- df$ID
+# mbdf$ID <- rownames(mbdf)
+# dfmb <- left_join(mbdf, df, by = "ID")
+# rowSums(otu)
+# dfmb %>% group_by(Site) %>% summarise(number = median(ASV_220))
+# ggplot(data = dfmb, aes(x = as.factor(Site), y = ASV_220, fill = as.factor(Site))) +
+#     geom_violin() +
+#     geom_boxplot(fill = "white", width = 0.1) +
+#     scale_y_log10()+
+#     scale_fill_manual(values = pal_futurama()(4)[3:4]) +
+#     stat_compare_means()+
+#     theme_Publication()
 
 # Put clinical data and microbiome data in same sequence of IDs
-dfsalt <- dfsalt[match(rownames(mbdf), dfsalt$ID), ]
+df <- df[match(rownames(mbdf), df$ID), ]
 
-# check that outcome subject ids match microbiota subjects ids
-all(dfsalt$ID == rownames(mbdf)) # TRUE
-dfsalt$ID
+# check that outcome subject ids match metabolite subjects ids
+all(df$ID == rownames(mbdf)) # TRUE
+df$ID
 rownames(mbdf)
 
-# make input data SBP
-path <- 'sbp'
+# make input data
+path <- 'urban_ams'
 dir.create(path)
-dir.create("sbp/input_data")
+dir.create("urban_ams/input_data")
 write_data(mbdf, file.path(path, 'input_data'))
-y <- as.data.frame(dfsalt$SBP)
+y <- as.data.frame(df$Site)
 y
-write_y(y, name_y = 'y_reg.txt', file.path(path, 'input_data'))
+write_y(y, name_y = 'y_binary.txt', file.path(path, 'input_data'))
 
-# make input data DBP
-path <- 'dbp'
-dir.create(path)
-dir.create("dbp/input_data")
-write_data(mbdf, file.path(path, 'input_data'))
-y <- as.data.frame(dfsalt$DBP)
-y
-write_y(y, name_y = 'y_reg.txt', file.path(path, 'input_data'))
-
-# make input data salt intake
-path <- 'salt'
-dir.create(path)
-dir.create("salt/input_data")
-write_data(mbdf, file.path(path, 'input_data'))
-y <- as.data.frame(dfsalt$SodiumInt)
-y
-write_y(y, name_y = 'y_reg.txt', file.path(path, 'input_data'))

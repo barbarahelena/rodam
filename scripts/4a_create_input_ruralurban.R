@@ -37,50 +37,50 @@ write_y <- function(x, name_y, data_path){
 ## Open ADC dataframe
 df <- readRDS('data/clinicaldata.RDS')
 head(df)
-any(is.na(df$Renin)) # TRUE
-dfrenin <- df %>% filter(!is.na(Renin) & !is.na(Aldo))
-dfrenin <- dfrenin %>% dplyr::select(ID, Renin, Aldo, ARR)
+any(is.na(df$Site)) # FALSE
+df$Site <- case_when(
+                df$Site=="Rural Ghana" ~ 0,
+                df$Site=="Urban Ghana" ~ 1)
+summary(as.factor(df$Site))
+df <- df %>% dplyr::select(ID, Site)
 
 ## Open RDS file with OTU table
 mb <- readRDS('data/phyloseq_sampledata.RDS')
-mb <- prune_samples(dfrenin$ID, mb)
 otu <- t(as(mb@otu_table, "matrix"))
-tk <- apply(otu, 2, function(x) sum(x > 5) > (0.2*length(x)))
+tk <- apply(otu, 2, function(x) sum(x > 10) > (0.30*length(x)))
 mbdf <- otu[,tk]
-dim(mbdf)
+# dim(mbdf)
+# gghistogram(mbdf[,6], bins = 30)
 mbdf <- as.data.frame(mbdf)
+dim(mbdf)
+
+# rownames(df) <- df$ID
+# mbdf$ID <- rownames(mbdf)
+# dfmb <- left_join(mbdf, df, by = "ID")
+# rowSums(otu)
+# dfmb %>% group_by(Site) %>% summarise(number = median(ASV_220))
+# ggplot(data = dfmb, aes(x = as.factor(Site), y = ASV_220, fill = as.factor(Site))) +
+#     geom_violin() +
+#     geom_boxplot(fill = "white", width = 0.1) +
+#     scale_y_log10()+
+#     scale_fill_manual(values = pal_futurama()(4)[3:4]) +
+#     stat_compare_means()+
+#     theme_Publication()
 
 # Put clinical data and microbiome data in same sequence of IDs
 df <- df[match(rownames(mbdf), df$ID), ]
 
-# check that outcome subject ids match microbiota subjects ids
+# check that outcome subject ids match metabolite subjects ids
 all(df$ID == rownames(mbdf)) # TRUE
 df$ID
 rownames(mbdf)
 
-# make input data renin
-path <- 'renin'
+# make input data
+path <- 'rural_urban'
 dir.create(path)
-dir.create("renin/input_data")
+dir.create("rural_urban/input_data")
 write_data(mbdf, file.path(path, 'input_data'))
-y <- as.data.frame(df$Renin)
+y <- as.data.frame(df$Site)
 y
-write_y(y, name_y = 'y_reg.txt', file.path(path, 'input_data'))
+write_y(y, name_y = 'y_binary.txt', file.path(path, 'input_data'))
 
-# make input data aldo
-path <- 'aldo'
-dir.create(path)
-dir.create("aldo/input_data")
-write_data(mbdf, file.path(path, 'input_data'))
-y <- as.data.frame(df$Aldo)
-y
-write_y(y, name_y = 'y_reg.txt', file.path(path, 'input_data'))
-
-# make input data ARR
-path <- 'ARR'
-dir.create(path)
-dir.create("ARR/input_data")
-write_data(mbdf, file.path(path, 'input_data'))
-y <- as.data.frame(df$ARR)
-y
-write_y(y, name_y = 'y_reg.txt', file.path(path, 'input_data'))
