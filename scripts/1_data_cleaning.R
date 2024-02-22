@@ -8,8 +8,9 @@ library(rio)
 library(haven)
 
 ## Open phyloseq object
-tab <- readRDS('data/phyloseq/rarefied/phyloseq_rarefied.RDS')
-tax <- readRDS('data/phyloseq/rarefied/taxtable_rarefied.RDS')
+tab <- readRDS('data/rarefied/phyloseq_rarefied.RDS')
+tax <- readRDS('data/rarefied/taxtable_rarefied.RDS')
+ids <- haven::read_sav("data/HELIUS_participants_Total_ProsRod.sav")
 
 ## Inspect phyloseq object
 ntaxa(tab)
@@ -19,8 +20,9 @@ all(depth == depth[1]) # TRUE -> rarefied
 
 ## Fix IDs
 idlist <- str_remove(sample_names(tab), '_T1')
+idlist <- case_when(str_detect(idlist, "X") ~ ids$RodamID[match(str_remove(idlist, "X"), ids$Heliusnr)],
+          .default=idlist)
 sample_names(tab) <- idlist
-sample_names(tab)
 
 ### Get top 300 ASV by abundance 
 ss <- taxa_sums(tab)
@@ -92,16 +94,42 @@ df_new <- df_compl %>%
            FecalSample_Prob = fct_rev(FecalSample_Prob),
            BristolScale = str_remove(FecalSample_Bristol, "Type "),
            BristolScale = as.numeric(as.character(BristolScale)),
-           ARR = Aldo/Renin
+           ARR = Aldo/Renin,
+           AntiHT = case_when(
+               AntiHT == "Yes" | Diuretics == "Yes" | CalciumAnt == "Yes" |
+                   BetaBlocker == "Yes" | RAASi == "Yes" ~ paste0("Yes"),
+               .default = "No"
+           ),
+           AntiHT = as.factor(AntiHT),
+           AgeCat = case_when(Age < 50 ~ "Young", Age >= 50 ~ "Old"),
+           AGe = as.factor(AgeCat),
+           BMIcat = case_when(
+               BMI < 20 ~ "<20",
+               BMI >20 & BMI < 25 ~ "20-25",
+               BMI > 25 & BMI < 30 ~ "25-30",
+               BMI > 30 ~ ">30"
+           )
     ) %>% 
-    filter(Site %in% c("Urban Ghana", "Rural Ghana")) %>% 
+    filter(Site %in% c("Urban Ghana", "Rural Ghana", "Amsterdam")) %>% 
+    filter(ID %in% sample_names(tab)) %>% 
     mutate(across(where(is.numeric), as.numeric) # all other vars to numeric, do this last
     ) %>% 
     # remove unused levels
     droplevels(.) %>% 
-    filter(AB != "Yes") %>% 
-    filter(BristolScale != 7)
-    # filter(FecalSample_AB == "No") 205 of 1050 on antibiotics.. so skipped this step
+    filter(AB != "Yes")
+
+## Clean dietary data - two IDs have way too high intake
+dietids <- c("G0421", "G2545")
+df_new <- df_new %>% mutate(
+    TotalCalories = case_when(ID %in% dietids ~ NA, .default = TotalCalories),
+    Proteins = case_when(ID %in% dietids ~ NA, .default = Proteins),
+    Fat = case_when(ID %in% dietids ~ NA, .default = Fat),
+    Fibre = case_when(ID %in% dietids ~ NA, .default = Fibre),
+    Carbohydrates = case_when(ID %in% dietids ~ NA, .default = Carbohydrates),
+    SodiumInt = case_when(ID %in% dietids ~ NA, .default = SodiumInt),
+    AlcoholIntake = log(AlcoholIntake+0.01)
+)
+    
 dim(df_new)
 
 ## Select IDs present in both dataframes
@@ -116,4 +144,3 @@ rodamcomplete <- merge_phyloseq(tabprune, sampledata)
 saveRDS(df_new, file = "data/clinicaldata.RDS")
 saveRDS(rodamcomplete, file = "data/phyloseq_sampledata.RDS")
 saveRDS(tax, file = "data/taxtable.RDS")
-
