@@ -56,16 +56,17 @@ plot_features_tests_class <- function(input_path, output_path, top_n=10, labels=
         asv <- features_tk[j]
         df <- dd %>% dplyr::select(all_of(asv), y)
         names(df)[1] <- 'Feature'
-        df <- df %>% mutate(Feature = log10(Feature+1))
+        df <- df %>% mutate(Feature = Feature)
         tax_asv <- tax$Tax[match(asv, tax$ASV)]
         pl <- ggplot(df, aes(x=y, y=Feature, fill=y))+
             geom_violin() +
             scale_fill_manual(values = colors, guide = FALSE)+
             geom_boxplot(width=0.1, fill="white", outlier.shape = NA)+
+            scale_y_log10()+
             theme_Publication()+
             theme(legend.position = 'none')+
             ggpubr::stat_compare_means()+
-            labs(x = "", y = "Log10-transformed counts", title = tax_asv)
+            labs(x = "", y = "Counts", title = tax_asv)
         fname <- tax_asv
         cat(j, fname, '\n')
         fname <- str_replace_all(fname, "[*\";,:/\\\\ ]","_")
@@ -127,11 +128,12 @@ plot_features_tests_top <- function(input_path, output_path, top_n=20, nrow=4, l
     df$y <- factor(ifelse(df$y==1, labels[1],labels[2]))
     df <- df %>% mutate(features = as.factor(features),
                         features = fct_inorder(features),
-                        values = log10(values+1)
+                        values = values
     )
     colors <- pal_futurama()(4)[3:4]
     pl <- ggplot(df, aes(x=y, y=values))+
         geom_violin(aes(fill=y))+
+        scale_y_log10()+
         scale_fill_manual(values = colors, guide = FALSE)+
         geom_boxplot(width=0.1, fill="white", outlier.shape = NA)+
         theme_Publication()+
@@ -276,7 +278,7 @@ plot_features_tests_reg <- function(input_path, output_path, top_n=10, outcome_n
         arrange(-RelFeatImp) %>% 
         slice(1:top_n) %>% 
         filter(!FeatName %in% c('random_variable1', 'random_variable2')) %>% 
-        select(FeatName)
+        dplyr::select(FeatName)
     input_data <- rio::import(file.path(input_path, 'X_data.txt'))
     feature_names <- read.csv(file.path(input_path, 'feat_ids.txt'), sep = '\t', header = F)
     names(input_data) <- feature_names$V1
@@ -350,7 +352,7 @@ plot_features_top_n_reg <- function(input_path, output_path, top_n=20, nrow=4, o
         arrange(-RelFeatImp) %>%
         slice(1:top_n) %>% 
         filter(!FeatName %in% c('random_variable1', 'random_variable2')) %>% 
-        select(FeatName)
+        dplyr::select(FeatName)
     input_data <- rio::import(file.path(input_path, 'X_data.txt'))
     feature_names <- read.csv(file.path(input_path, 'feat_ids.txt'), sep = '\t', header = F)
     names(input_data) <- feature_names$V1 
@@ -562,7 +564,7 @@ plot_feature_importance_color_microbiome <- function(path_true, top_n){
     r <- rio::import(file.path(path_true, 'feature_importance.txt'))
     r <- r %>% arrange(-RelFeatImp)
     a <- readRDS("data/tax_table.RDS")
-    a <- a %>% select(FeatName = ASV, Family, Tax)
+    a <- a %>% dplyr::select(FeatName = ASV, Family, Tax)
     ra <- left_join(r, a, by='FeatName') %>% slice(1:top_n) %>% 
         mutate(Tax = make.unique(Tax)) %>% 
         droplevels(.) %>% 
