@@ -3,12 +3,16 @@
 
 ## Libraries
 library(rio)
+library(ggplot2)
+library(ggsci)
+library(ggpubr)
 library(phyloseq)
 library(dplyr)
 library(tidyr)
 library(forcats)
 library(patchwork)
 library(compositions)
+library(broom)
 
 theme_Publication <- function(base_size=14, base_family="sans") {
     library(grid)
@@ -99,9 +103,10 @@ res <- c()
 for (i in c(58:77)) {
     df$asv <- df[[i]]
     m0 <- lm(asv ~ Site, data = df)
-    m1 <- lm(asv ~ Site + Age + Sex + BMI + CurrSmoking + BristolScale, data = df)
-    m2 <- lm(asv ~ Site + Age + Sex + BMI + CurrSmoking + AntiHT + DMMed + LipidLowering, data = df)
-    m3 <- lm(asv ~ Site + Age + Sex + BMI + CurrSmoking + AntiHT + DMMed + LipidLowering + DietPC1 + DietPC2, data = df)
+    m1 <- lm(asv ~ Site + Age + Sex + BMI + BristolScale, data = df)
+    m2 <- lm(asv ~ Site + Age + Sex + BMI + AntiHT + DMMed + LipidLowering, data = df)
+    m3 <- lm(asv ~ Site + Age + Sex + BMI + AntiHT + DMMed + LipidLowering + DietPC1 + 
+                 DietPC2, data = df)
     
     taxasv <- colnames(df)[i]
     m0 <- tidy(m0, conf.int=T)[2,]
@@ -143,7 +148,7 @@ res3 <- res2 %>%
                  values_to="value") %>% 
     pivot_wider(names_from = cat, values_from = value) %>% 
     mutate(model = factor(model, levels = c("0", "1", "2", "3"), 
-                          labels = c("Unadjusted", "Age, Sex, BMI, Smoking, Bristol scale", 
+                          labels = c("Unadjusted", "Age, Sex, BMI, Bristol scale", 
                                      "+Medication", "+Diet")),
            ASV = factor(ASV, levels = colnames(df)[(ncol(df)-19):ncol(df)]),
            ASV = fct_rev(ASV),
