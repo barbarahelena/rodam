@@ -35,7 +35,7 @@ write_y <- function(x, name_y, data_path){
 
 
 ## Open ADC dataframe
-df <- readRDS('data/clinicaldata.RDS')
+df <- readRDS('data/clinicaldata.RDS') %>% filter(Site %in% c("Urban Ghana", "Rural Ghana"))
 head(df)
 any(is.na(df$Site)) # FALSE
 df$Site <- case_when(
@@ -46,6 +46,7 @@ df <- df %>% dplyr::select(ID, Site)
 
 ## Open RDS file with OTU table
 mb <- readRDS('data/phyloseq_sampledata.RDS')
+mb <- prune_samples(sample_names(mb) %in% df$ID, mb)
 otu <- t(as(mb@otu_table, "matrix"))
 tk <- apply(otu, 2, function(x) sum(x > 10) > (0.30*length(x)))
 mbdf <- otu[,tk]
