@@ -81,7 +81,7 @@ make_input_folder_bin <- function(clindata, otutable, namevar, namefolder){
                     var == "No" ~ 0
                     )
                 )
-    print(df$var)
+    # print(df$var)
     mb <- prune_samples(sample_names(mb) %in% df$ID, mb)
     otu <- t(as(mb@otu_table, "matrix"))
     tk <- apply(otu, 2, function(x) sum(x > 10) > (0.3*length(x)))
@@ -104,12 +104,16 @@ make_input_folder_bin <- function(clindata, otutable, namevar, namefolder){
 df <- readRDS('data/clinicaldata.RDS') %>% 
     mutate(
         Women = case_when(
-            Sex == "Female" ~ "Women",
-            Sex == "Male" ~ "Men"
+            Sex == "Female" ~ "Yes",
+            Sex == "Male" ~ "No"
         ),
         Active_binary = case_when(
             Active == "Low level" ~ "No",
             Active == "Moderate level" | Active == "High level" ~ "Yes"
+        ),
+        Occupation_manual = case_when(
+            Occupation_binary == "manual" ~ "Yes",
+            Occupation_binary == "non manual" ~ "No"
         ),
         EarlyLifeUrban_binary = case_when(
             LocEarlyLife == "I lived in a village (rural)" ~ "No",
@@ -138,6 +142,6 @@ make_input_folder_cont(df, mb, "PhysAct", "physicalactivity")
 make_input_folder_bin(df, mb, "Women", "women")
 make_input_folder_bin(df, mb, "FecalSample_Prob", "probiotics")
 make_input_folder_bin(df, mb, "AntiHT", "bpmed")
-make_input_folder_bin(df, mb, "Occupation_binary", "occupation")
+make_input_folder_bin(df, mb, "Occupation_manual", "occupationmanual")
 make_input_folder_bin(df, mb, "Active_binary", "active")
 make_input_folder_bin(df, mb, "EarlyLifeUrban_binary", "earlylifeurban")
