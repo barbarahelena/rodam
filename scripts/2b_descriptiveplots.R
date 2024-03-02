@@ -47,21 +47,23 @@ resultsfolder <- "results/diet"
 dir.create(resultsfolder, showWarnings = FALSE)
 
 ## Load dataset
-df_new <- rio:: import("data/clinicaldata.RDS")
+df_new <- readRDS("data/clinicaldata.RDS")
+vanish <- readRDS("data/ids_vanishing.RDS")
+df_new <- left_join(df_new, vanish, by = "ID")
 
 ## PCA diet
-df_diet <- df_new %>% dplyr::select(ID, Site, TotalCalories, Fibre, Proteins, 
+df_diet <- df_new %>% dplyr::select(ID, Site, vanishing, TotalCalories, Fibre, Proteins, 
                              Carbohydrates, Fat, SodiumInt) %>% 
     filter(!is.na(TotalCalories)) %>% 
     filter(TotalCalories < 7500)
-df_diet2 <- df_diet %>% dplyr::select(-ID, -Site, -TotalCalories) %>% mutate(across(everything(.), scale))
+df_diet2 <- df_diet %>% dplyr::select(-ID, -Site, -vanishing, -TotalCalories) %>% mutate(across(everything(.), scale))
 matdiet <- as.matrix(df_diet2)
 #matdiet <- scale(matdiet)
 tunediet <- tune.pca(matdiet, ncomp = 5, scale = TRUE)
 plot(tunediet)
 pc <- mixOmics::pca(matdiet, ncomp = 4)
 pcs <- as.data.frame(pc$variates$X)
-pcs <- pcs %>% mutate(ID = df_diet$ID, Site = df_diet$Site)
+pcs <- pcs %>% mutate(ID = df_diet$ID, Site = df_diet$Site, vanishing = df_diet$vanishing)
 expvar_diet <- pc$prop_expl_var$X[1:4]
 loadings <- as.data.frame(pc$loadings$X)
 loadings$Variables <- rownames(loadings)
@@ -197,3 +199,22 @@ ggarrange(pl1, pl2, pl3, pl4, pl5, pl6, nrow = 2, ncol = 3,
 ggsave("results/diet/dietaryintake.pdf", width = 15, height = 12)
 ggsave("results/diet/dietaryintake.svg", width = 15, height = 12)
 
+
+
+(pcadiet <- pcs %>% 
+        ggplot(aes(PC1, PC2)) +
+        geom_point(aes(color = vanishing), size = 1, alpha = 1.0) +
+        xlab(paste0('PC1 (', round(expvar_diet[1]*100, digits = 1),'%)')) +
+        ylab(paste0('PC2 (', round(expvar_diet[2]*100, digits = 1),'%)')) +
+        theme_Publication() +
+        stat_ellipse(geom = "polygon", aes(color = vanishing, fill = vanishing), linewidth = 1.0,
+                     alpha = 0.1, type = "norm")+
+        scale_color_manual(values = pal_cosmic()(7)[6:7]) +
+        scale_fill_manual(values = pal_cosmic()(7)[6:7], guide = "none") +
+        labs(color = "", title = "PCA diet")+
+        geom_segment(data = loadings, aes(x = 0, y = 0, xend = (PC1*2), yend = (PC2*2)), 
+                     arrow = arrow(length = unit(1/2, "picas")),
+                     color = "black", linewidth = 0.9) +
+        annotate("text", x = (loadings$PC1*3), y = (loadings$PC2*3),
+                 label = loadings$Variables)
+)
