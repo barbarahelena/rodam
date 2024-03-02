@@ -34,7 +34,7 @@ write_y <- function(x, name_y, data_path){
 }
 
 
-## Open ADC dataframe
+## Open dataframe
 df <- readRDS('data/clinicaldata.RDS') %>% filter(Site %in% c("Urban Ghana", "Amsterdam"))
 head(df)
 any(is.na(df$Site)) # FALSE
@@ -49,7 +49,7 @@ mb <- readRDS('data/phyloseq_sampledata.RDS')
 mb <- prune_samples(sample_names(mb) %in% df$ID, mb)
 otu <- t(as(mb@otu_table, "matrix"))
 otu_dich <- ifelse(otu > 0, 1, 0)
-tk <- apply(otu_dich, 2, function(x) sum(x > 0) > (0.05*length(x)))
+tk <- apply(otu_dich, 2, function(x) sum(x > 0) > (0.1*length(x)))
 mbdf <- otu_dich[,tk]
 dim(mbdf)
 mbdf <- as.data.frame(mbdf)
