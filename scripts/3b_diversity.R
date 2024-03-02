@@ -69,27 +69,6 @@ df_shan <- left_join(df_shan, df_new, by = "ID")
 ggsave(plshan, filename = "results/alphadiversity/shannon.svg", width = 6, height = 5)
 ggsave(plshan, filename = "results/alphadiversity/shannon.pdf", width = 6, height = 5)
 
-(plshansbp <- df_shan %>% filter(AntiHT == "No") %>% 
-        ggplot(data = ., aes(x = shannon, y = SBP, color = Site)) +
-        geom_point(alpha = 0.5)+
-        geom_smooth(method = "lm")+
-        scale_color_manual(values = pal_cosmic()(4)[2:4]) +
-        stat_cor()+
-        labs() + 
-        theme_Publication())
-(plshandbp <- df_shan %>% filter(AntiHT == "No") %>% 
-        ggplot(data = ., aes(x = shannon, y = DBP, color = Site)) +
-        geom_point(alpha = 0.5)+
-        geom_smooth(method = "lm")+
-        scale_color_manual(values = pal_cosmic()(4)[2:4]) +
-        stat_cor()+
-        labs() + 
-        theme_Publication())
-ggarrange(plshansbp, plshandbp, labels = c("A", "B"), common.legend = TRUE, 
-          legend = "bottom")
-ggsave(filename = "results/alphadiversity/shannon_bp.svg", width = 8, height = 5)
-ggsave(filename = "results/alphadiversity/shannon_bp.pdf", width = 8, height = 5)
-
 ## Species richness Urban-rural
 specrich <- specnumber(tab)
 dfspec <- data.frame(ID = names(specrich), richness = specrich)
