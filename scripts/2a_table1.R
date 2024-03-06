@@ -18,7 +18,7 @@ Table1 <- CreateTableOne(data = df_new,
                                   "SBP", "DBP", "TC", "LDL", "HbA1c",
                                   "HT", "AntiHT", "DM", "DMMed", "LipidLowering",
                                   "FecalSample_AB", "FecalSample_Prob", "BristolScale"), 
-                         strata = c("Site"))
+                         strata = c("Site"), addOverall = TRUE)
 Table1 <- print(Table1, contDigits = 1, missing = TRUE, nonnormal = "BristolScale")
 Table1 <- as.data.frame(Table1)
 table1 <- Table1 %>% mutate(across(everything(.), ~trimws(.x, which = "both")))
