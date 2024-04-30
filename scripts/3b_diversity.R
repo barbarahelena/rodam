@@ -69,26 +69,14 @@ df_shan <- left_join(df_shan, df_new, by = "ID")
 ggsave(plshan, filename = "results/alphadiversity/shannon.svg", width = 6, height = 5)
 ggsave(plshan, filename = "results/alphadiversity/shannon.pdf", width = 6, height = 5)
 
-(plshansbp <- df_shan %>% filter(AntiHT == "No") %>% 
-        ggplot(data = ., aes(x = shannon, y = SBP, color = Site)) +
-        geom_point(alpha = 0.5)+
+(plshan <- ggplot(data = df_shan, aes(x = SodiumInt, y = shannon, color = SodiumInt)) +
+        geom_jitter() +
         geom_smooth(method = "lm")+
-        scale_color_manual(values = pal_cosmic()(4)[2:4]) +
-        stat_cor()+
-        labs() + 
+        # scale_fill_manual(values = pal_cosmic()(4)[2:4], guide = "none") +
+        # geom_boxplot(width = 0.1, fill = "white", outlier.shape = NA) +
+        # stat_compare_means(label.y = 5.5) +
+        labs(title = "Shannon index", y = "Shannon index", x="") + 
         theme_Publication())
-(plshandbp <- df_shan %>% filter(AntiHT == "No") %>% 
-        ggplot(data = ., aes(x = shannon, y = DBP, color = Site)) +
-        geom_point(alpha = 0.5)+
-        geom_smooth(method = "lm")+
-        scale_color_manual(values = pal_cosmic()(4)[2:4]) +
-        stat_cor()+
-        labs() + 
-        theme_Publication())
-ggarrange(plshansbp, plshandbp, labels = c("A", "B"), common.legend = TRUE, 
-          legend = "bottom")
-ggsave(filename = "results/alphadiversity/shannon_bp.svg", width = 8, height = 5)
-ggsave(filename = "results/alphadiversity/shannon_bp.pdf", width = 8, height = 5)
 
 ## Species richness Urban-rural
 specrich <- specnumber(tab)
@@ -100,10 +88,20 @@ dfspec <- left_join(dfspec, df_new, by = "ID")
     geom_boxplot(outlier.shape = NA, fill = "white", width = 0.1) +
     theme_Publication() + 
     scale_fill_manual(values = pal_cosmic()(4)[2:4], guide = "none") + 
-    labs(title = "Species richness", y = "Number of species", x = "") +
+    labs(title = "Richness", y = "Number of ASVs", x = "") +
     stat_compare_means(label.y = 800))
 ggsave(plrich, filename = "results/alphadiversity/richness.pdf", width = 4, height = 5)
 ggsave(plrich, filename = "results/alphadiversity/richness.svg", width = 4, height = 5)
+
+(plrich <- ggplot(data = dfspec, aes(x = SodiumInt, y = richness, color = SodiumInt)) +
+        geom_jitter()+
+        geom_smooth(method = "lm") +
+        stat_cor()+
+        # geom_boxplot(outlier.shape = NA, fill = "white", width = 0.1) +
+        theme_Publication() + 
+        # scale_fill_manual(values = pal_cosmic()(4)[2:4], guide = "none") + 
+        labs(title = "Richness", y = "Number of ASVs", x = "") +
+        stat_compare_means(label.y = 610))
 
 ## Faith's PD urban-rural
 faith <- picante::pd(samp = tab_matrix, tree = phydata@phy_tree)
@@ -121,8 +119,18 @@ dffai <- left_join(dffai, df_new, by = "ID")
 ggsave(plfaith, filename = "results/alphadiversity/faiths.pdf", device = "pdf", width = 4, height = 5)
 ggsave(plfaith, filename = "results/alphadiversity/faiths.svg", device = "svg", width = 4, height = 5)
 
+(plrich <- ggplot(data = dffai, aes(x = SodiumInt, y = PD, color = SodiumInt)) +
+        geom_jitter()+
+        geom_smooth(method = "lm") +
+        stat_cor()+
+        theme_Publication() + 
+        labs(title = "Faiths", y = "Number of ASVs", x = "") +
+        stat_compare_means(label.y = 80))
+
 ## Ggarrange urban-rural
-pl_total <- ggarrange(plshan, plrich, plfaith, labels = c("A", "B", "C"), nrow =1)
+pl_total <- ggarrange(plshan, plrich, plfaith, 
+                      # labels = c("A", "B", "C"), 
+                      nrow =1)
 ggsave(pl_total, filename = "results/alphadiversity/alphadivplots.pdf", width = 11, height = 5)
 ggsave(pl_total, filename = "results/alphadiversity/alphadivplots.svg", width = 11, height = 5)
 
