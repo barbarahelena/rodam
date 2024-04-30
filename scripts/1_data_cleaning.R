@@ -39,21 +39,35 @@ sum(!is.na(tax300$Phylum)) / nrow(tax300) * 100 # 100 % of top 300 ASVs have phy
 ## Open HELIUS clinical data
 df <- haven::read_sav("data/RODAM_dataset.sav") %>% 
     filter(!duplicated(RodamID))
+df2 <- haven::read_sav("data/ROD2_18_BV_Microbiome_HTN_20240226_RODAMbaseline_ProsRODAMfollowup_April2023_additionalVars.sav") %>% filter(!duplicated(RodamID))
 reninaldo <- haven::read_sav("data/RODAM_reninaldo.sav") %>% 
     filter(!duplicated(RodamID))
-df_compl <- full_join(df, reninaldo, by = "RodamID")
+df_compl <- full_join(df, reninaldo, by = "RodamID") %>% 
+    full_join(., df2, by = "RodamID")
 
 ## Clean RODAM dataframe
-df_new <- df_compl %>% 
+na_strings <- c("","routing missing", "missing", 
+                "nvt", "Routing missing", "Missing")
+df_compl <- df_compl %>% 
     dplyr::select(ID=RodamID, Age=R2_Age, Sex=R2_Sex, Site=R2_Site,
-                  Smoking=R1R2_Smoking, Alcohol=R2_alcohol_units_day, 
+                  Smoking=R1R2_Smoking, Alcohol=R2_alcohol_units_day,
+                  Occupation_binary = R1R2_Occupation3, 
+                  Occupation = R1R2_Occupation6,
+                  Education = R1R2_Education,
+                  Profession = R1R2_Profession,
+                  # Living environment
+                  LocGhana1 = R1_LiveGHA, LocGhana2 = R2_LiveGHA,
+                  CityGhana1 = R1_LiveCityGHAX, CityGhana2 = R2_LiveCityGHAX,
+                  VillGhana1 = R1_LiveVillageGHAX, VillGhana2 = R2_LiveVillageGHAX,
+                  TimeLoc1 = R1_LiveTime, TimeLoc2 = R2_LiveTime,
+                  LocEarlyLife = R2_EarlyLife, MoveEarlyLife = R2_EarlyLifeCityVil,
                   # Physical exam
                   BMI=R2_BMI, SBP=R2_BPsys_mean, 
                   DBP=R2_BPdia_mean, BPcat=R2_BPcat_ESC,
                   # Cardiometabolic
                   HT=R2_HTN_MedBP, Hyperchol=R1R2_CholDiagn, Stroke=R1R2_Stroke,
                   DM=R2_DM_Dichot, ACR_KDIGO=R2_ACR_KDIGO,
-                  FramRisk=R2_FramScore,
+                  FramRisk=R2_FramScore, Active=R2_Active, PhysAct=R2_Ptotallevels,
                   # Lab
                   Na=R2_Na, UrineNa=R2_Na_Urine, Ka=R2_K, UrineK=R2_K_Urine,
                   GFR=R2_CKDEPI_eGFR_2021, ACR=R2_ACR,
@@ -75,14 +89,44 @@ df_new <- df_compl %>%
                   FecalSample_AB=R2_Stool_AB, FecalSample_Prob=R2_Stool_Probiotics, 
                   FecalSample_Bristol=R2_Stool_BSS
     ) %>% 
-    naniar::replace_with_na(., to_na = list("routing missing", "missing",                                      "nvt", "Routing missing", "Missing")) %>% 
-    mutate(across(c("Sex", "Smoking", "Site", "FecalSample_AB", "FecalSample_Prob",
+    naniar::replace_with_na_all(condition = ~.x %in% na_strings)
+
+df_new <- df_compl %>% 
+    mutate(across(c("VillGhana1", "VillGhana2", "CityGhana1", "CityGhana2"), str_to_lower),
+           VillGhana = case_when(
+               !is.na(VillGhana1) ~ VillGhana1,
+               !is.na(VillGhana2) ~ VillGhana2
+           ),
+           CityGhana = case_when(
+               !is.na(CityGhana1) ~ CityGhana1,
+               !is.na(CityGhana2) ~ CityGhana2
+           ),
+            across(c("Sex", "Smoking", "Site", "FecalSample_AB", "FecalSample_Prob",
                     "FecalSample_Bristol",
                     "HT", "DM", "Hyperchol", "Stroke", "ACR_KDIGO",
                     "AntiHT", "Diuretics", "BPcat",
                     "CalciumAnt", "BetaBlocker", "RAASi", 
-                    "LipidLowering","DMMed","AB", "AFung"),
+                    "LipidLowering","DMMed","AB", "AFung", "LocGhana1", "LocGhana2",
+                    "Occupation", "Occupation_binary", "Profession", "Education",
+                    "LocEarlyLife", "MoveEarlyLife", "Active"),
                   ~as_factor(.x, levels = c("labels"))),
+           LocGhana = case_when(
+               !is.na(LocGhana1) ~ LocGhana1,
+               !is.na(LocGhana2) ~ LocGhana2
+           ),
+           TimeLoc = case_when(
+               !is.na(TimeLoc1) ~ TimeLoc1,
+               !is.na(TimeLoc2) ~ TimeLoc2
+           ),
+           MoveEarlyLife = case_when(
+               MoveEarlyLife == "I first lived in a village and moved to a city later on" 
+                    ~ paste("VillageToCity"),
+               MoveEarlyLife == "I first lived in a city and moved to a village later on" 
+                    ~ paste("CityToVillage"),
+               MoveEarlyLife == "I moved between village and city several times" 
+                    ~ paste("MultipleMoves")
+           ),
+           # across(c("LocGhana", "MoveEarlyLife", "VillGhana", "CityGhana"), as.factor),
            CurrSmoking = fct_recode(Smoking, "Yes" = "Yes",
                                             "No" = "No, I have never smoked",
                                             "No" = "No, but I used to smoke"),
@@ -102,7 +146,7 @@ df_new <- df_compl %>%
            ),
            AntiHT = as.factor(AntiHT),
            AgeCat = case_when(Age < 50 ~ "Young", Age >= 50 ~ "Old"),
-           AGe = as.factor(AgeCat),
+           AgeCat = as.factor(AgeCat),
            BMIcat = case_when(
                BMI < 20 ~ "<20",
                BMI >20 & BMI < 25 ~ "20-25",
@@ -110,12 +154,14 @@ df_new <- df_compl %>%
                BMI > 30 ~ ">30"
            )
     ) %>% 
-    filter(Site %in% c("Urban Ghana", "Rural Ghana", "Amsterdam")) %>% 
+    filter(Site %in% c("Urban Ghana", "Rural Ghana", "Amsterdam")) %>%
     filter(ID %in% sample_names(tab)) %>% 
     mutate(across(where(is.numeric), as.numeric) # all other vars to numeric, do this last
     ) %>% 
     # remove unused levels
     droplevels(.) %>% 
+    select(-TimeLoc1, -TimeLoc2, -LocGhana1, -LocGhana2, -VillGhana1, -VillGhana2, 
+           -CityGhana1, -CityGhana2) %>% 
     filter(AB != "Yes")
 
 ## Clean dietary data - two IDs have way too high intake
