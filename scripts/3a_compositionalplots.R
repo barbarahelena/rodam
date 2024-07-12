@@ -8,7 +8,7 @@ library(vegan)
 library(circlize)
 
 ## Functions
-cols <- colorRampPalette(c(pal_cosmic(palette = "hallmarks_light")(10)))
+cols <- colorRampPalette(c(ggsci::pal_cosmic(palette = "hallmarks_light")(10)))
 
 theme_composition <- function(base_size=14, base_family="sans") {
     library(grid)
@@ -188,41 +188,6 @@ comp_genus <- dx_genus %>%
 ggsave(comp_genus, filename = "results/composition/composition_genus.pdf", width = 8, height = 5)
 
 
-dx_genus <- d %>% mutate(
-    Genus2 = case_when(
-        Genus %in% top_gen ~ paste(Genus),
-        is.na(Genus) ~ paste("Unknown"),
-        !(Genus %in% top_gen) ~ paste("Other genera")
-    ),
-    Genus2 = as.factor(Genus2)
-) %>% 
-    group_by(Genus2, Sample) %>% 
-    summarise(Abundance = sum(Abundance)) %>% 
-    mutate(SaltBin = clindata$SaltBin[match(Sample, clindata$ID)],
-           SaltBin = as.factor(SaltBin)) %>% 
-    filter(!is.na(SaltBin)) %>% 
-    group_by(Genus2, SaltBin) %>% 
-    summarise(Abundance = mean(Abundance)) %>% 
-    mutate(group = "all samples",
-           Genus2 = fct_reorder(Genus2, Abundance),
-           Genus2 = fct_relevel(Genus2, "Other genera", after = 0L),
-           Genus2 = fct_relevel(Genus2, "Unknown", after = 0L),
-           SaltBin = fct_relevel(SaltBin, "2000-3500mg", after = 1L)
-    ) 
-
-lev <- levels(dx_genus$Genus2)
-
-set.seed(1234)
-comp_genus <- dx_genus %>% 
-    ggplot(aes(x = SaltBin, y = Abundance, fill = Genus2)) +
-    geom_bar(stat = "identity", color = "black") +
-    scale_fill_manual(values = rev(c(sample(cols(20)), "grey70", "grey90")), labels = lev) +
-    guides(fill = guide_legend(ncol = 1)) +
-    labs(y="Composition (%)", x = "Salt intake", title = "Genus", fill = "") +
-    scale_y_continuous(expand = c(0, 0)) +
-    theme_composition()
-ggsave(comp_genus, filename = "results/composition/composition_genus_salt.pdf", width = 8, height = 5)
-
 #### Family level ####
 N <- 20
 # convert to long format
@@ -249,7 +214,7 @@ dx_family <- d %>% mutate(
     Family2 = case_when(
         Family %in% top_fam ~ paste(Family),
         is.na(Family) ~ paste("Unknown"),
-        !(Family %in% top_taxa) ~ paste("Other families")
+        !(Family %in% top_fam) ~ paste("Other families")
     ),
     Family2 = as.factor(Family2)
 ) %>% 
@@ -278,38 +243,6 @@ comp_family <- dx_family %>%
     theme_composition()
 ggsave(comp_family, filename = "results/composition/composition_family.pdf", width = 8, height = 5)
 
-dx_family <- d %>% mutate(
-    Family2 = case_when(
-        Family %in% top_fam ~ paste(Family),
-        is.na(Family) ~ paste("Unknown"),
-        !(Family %in% top_taxa) ~ paste("Other families")
-    ),
-    Family2 = as.factor(Family2)
-) %>% 
-    group_by(Family2, Sample) %>% 
-    summarise(Abundance = sum(Abundance)) %>% 
-    mutate(SaltBin = clindata$SaltBin[match(Sample, clindata$ID)]) %>% 
-    filter(!is.na(SaltBin)) %>% 
-    group_by(Family2, SaltBin) %>% 
-    summarise(Abundance = mean(Abundance)) %>% 
-    mutate(Family2 = fct_reorder(Family2, Abundance),
-           Family2 = fct_relevel(Family2, "Other families", after = 0L),
-           Family2 = fct_relevel(Family2, "Unknown", after = 0L),
-           SaltBin = fct_relevel(SaltBin, "2000-3500mg", after = 1L)
-    )
-
-lev <- levels(dx_family$Family2)
-lev
-
-comp_family <- dx_family %>% 
-    ggplot(aes(x = SaltBin, y = Abundance, fill = Family2)) +
-    geom_bar(stat = "identity", color = "black") +
-    scale_fill_manual(values = rev(c(sample(cols(20)), "grey70", "grey90")), labels = lev) +
-    guides(fill = guide_legend(ncol = 1)) +
-    labs(y="Composition (%)", x = "", title = "Family", fill = "") +
-    scale_y_continuous(expand = c(0, 0)) +
-    theme_composition()
-ggsave(comp_family, filename = "results/composition/composition_family_salt.pdf", width = 8, height = 5)
 
 #### Phylum level ####
 N <- 6
