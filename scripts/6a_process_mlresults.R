@@ -4,9 +4,12 @@ options(scipen=999)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(ggpubr)
 library(ggsci)
+library(ggplotify)
 library(stringr)
 library(forcats)
+library(aplot)
 
 colfam <- list(
     "Bacteroidaceae" = "#2F509E",
@@ -36,7 +39,7 @@ pl1 <- plot_feature_importance_color_microbiome(path_true, 20)
 
 grConvert::convertPicture(file.path(path_true,"Plot_AUC.pdf"), file.path(path_true,"auc.svg"))
 svg_grob <- svgparser::read_svg(file.path(path_true,"auc.svg"))
-plarr1 <- ggarrange(svg_grob, pl1, nrow = 1, widths = c(1.0, 1.3))
+plarr1 <- ggarrange(svg_grob, pl1, nrow = 1, widths = c(1.0, 1.4))
 plarr1b <- annotate_figure(plarr1, top = text_grob("Rural Ghana - Urban Ghana", color = "black", face = "bold", size = 14))
 
 path_true <- 'urban_ams/output_XGB_class_urban_ams_2024_02_21__14-01-19'
@@ -51,9 +54,8 @@ pl2 <- plot_feature_importance_color_microbiome(path_true, 20)
 
 grConvert::convertPicture(file.path(path_true,"Plot_AUC.pdf"), file.path(path_true,"auc.svg"))
 svg_grob <- svgparser::read_svg(file.path(path_true,"auc.svg"))
-plarr2 <- ggarrange(svg_grob, pl2, nrow = 1, widths = c(1.0, 1.3))
+plarr2 <- ggarrange(svg_grob, pl2, nrow = 1, widths = c(1.0, 1.4))
 plarr2b <- annotate_figure(plarr2, top = text_grob("Urban Ghana - Amsterdam", color = "black", face = "bold", size = 14))
-
 
 ## Open data
 mb <- readRDS("data/phyloseq_sampledata.RDS")
@@ -83,7 +85,7 @@ clin <- readRDS("data/clinicaldata.RDS")
 df <- left_join(clin, dfmb, by = "ID")
 head(df)[1:5,1:5]
 
-dflong <- df %>% select(ID, Site, 68:ncol(.)) %>% pivot_longer(., 3:20, names_to = "ASV") %>% 
+dflong <- df %>% select(ID, Site, 69:ncol(.)) %>% pivot_longer(., 3:20, names_to = "ASV") %>% 
     mutate(Tax = factor(ASV, levels = ASV, labels = make.unique(as.character(tax$Tax[match(ASV, tax$ASV)]))),
            Tax = fct_reorder(Tax, match(ASV, tax$ASV)),
            value = (value / 15000 ) *100 
@@ -138,6 +140,7 @@ tax2 <- tax %>% mutate(Family = case_when(duplicated(Family) ~ "",
                                                color = "black", face = "bold", size = 14)))
 
 ## Assemble figure
-ggarrange(plarr1b, plarr2b, compl_anno, nrow = 3, labels = c("A", "B", "C"))
-ggsave("results/ml_abundance/ml_abundance.pdf", width = 17, height = 22)
-ggsave("results/ml_abundance/ml_abundance.svg", width = 17, height = 22)
+ggarrange(plarr1b, plarr2b, compl_anno, nrow = 3, labels = c("A", "B", "C"),
+          heights = c(1.0,1.0,1.4))
+ggsave("results/ml_abundance/ml_abundance.pdf", width = 13, height = 18)
+ggsave("results/ml_abundance/ml_abundance.svg", width = 13, height = 18)
