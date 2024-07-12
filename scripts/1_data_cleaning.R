@@ -138,6 +138,10 @@ df_new <- df_compl %>%
            FecalSample_Prob = fct_rev(FecalSample_Prob),
            BristolScale = str_remove(FecalSample_Bristol, "Type "),
            BristolScale = as.numeric(as.character(BristolScale)),
+           AlcoholBin = case_when(Alcohol > 0 ~ "Alcohol use",
+                                          Alcohol == 0 ~ "No alcohol use"),
+           AlcoholBin = fct_rev(AlcoholBin),
+           PhysActDay = PhysAct / 7,
            ARR = Aldo/Renin,
            AntiHT = case_when(
                AntiHT == "Yes" | Diuretics == "Yes" | CalciumAnt == "Yes" |
@@ -190,3 +194,4 @@ rodamcomplete <- merge_phyloseq(tabprune, sampledata)
 saveRDS(df_new, file = "data/clinicaldata.RDS")
 saveRDS(rodamcomplete, file = "data/phyloseq_sampledata.RDS")
 saveRDS(tax, file = "data/taxtable.RDS")
+
