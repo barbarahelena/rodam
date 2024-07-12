@@ -86,7 +86,7 @@ for(a in c(1:13)){
 
 compl <- bind_rows(ev_list)
 
-df4 <- compl %>% select(`Explained Variance`, outcome) %>% 
+df4 <- compl %>% dplyr::select(`Explained Variance`, outcome) %>% 
     mutate(
         expvar = as.numeric(`Explained Variance`),
         outcome = as.factor(outcome)
@@ -96,8 +96,8 @@ dfmean <- df4 %>% group_by(outcome) %>% summarise(mean = mean(expvar)*100) %>%
     arrange(desc(mean))
 df4 <- df4 %>% mutate(outcome2 = fct_reorder(outcome, .x = expvar,
                                              .fun = median, .desc = TRUE),
-                      outcome2 = fct_recode(outcome2, "carbs"="carbohydrates"),
-                    outcome2 = fct_recode(outcome2, "activity"="physicalactivity")
+                    outcome2 = fct_recode(outcome2, "physical_activity"="physicalactivity"),
+                    outcome2 = fct_recode(outcome2, "stool_consistency" = "bristol")
 )
 
 (pl3 <- df4 %>% filter(outcome %in% c("sodium", "proteins", "fat", "carbohydrates", "kcal", "fibre")) %>% 
@@ -111,12 +111,14 @@ df4 <- df4 %>% mutate(outcome2 = fct_reorder(outcome, .x = expvar,
                      outlier.shape = NA, width = 0.2, position = position_dodge(0.75)) +
         geom_beeswarm(aes(color = outcome2), side = -1L, method = "swarm", alpha = 0.5, spacing = 0.8,
                       corral = "none", corral.width = 0.4) +
-        labs(title = 'Macronutrients',
+        labs(title = 'Macronutrients - continuous',
              x = '', y = 'Explained variance (%)', linetype = '', size = '') +
         scale_y_continuous(limits = c(-10, 30), n.breaks = 8)+
         scale_color_manual(guide = "none", values = c(pal_cosmic()(4)[2:4], rep("grey50",3))) +
         scale_fill_manual(guide = "none", values = c(pal_cosmic()(4)[2:4], rep("grey50",3))) +
-        theme_Publication())
+        theme_Publication()+
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    )
 
 gem2 <- gem %>% filter(group %in% c("sodium", "proteins", "fat", 
                                     "carbohydrates", "kcal", "fibre")) %>% 
@@ -153,12 +155,13 @@ pl3
                           outlier.shape = NA, width = 0.2, position = position_dodge(0.75)) +
         geom_beeswarm(aes(color = outcome2), side = -1L, method = "swarm", alpha = 0.5, spacing = 0.8,
                       corral = "none", corral.width = 0.4) +
-        labs(title = 'Host factors - continuous',
+        labs(title = 'Other covariates - continuous',
              x = '', y = 'Explained variance (%)', linetype = '', size = '') +
         scale_y_continuous(limits = c(-10, 30), n.breaks = 8)+
         scale_color_manual(guide = "none", values = c(pal_cosmic()(7)[5:7], rep("grey50",4))) +
         scale_fill_manual(guide = "none", values = c(pal_cosmic()(7)[5:7], rep("grey50",4))) +
-        theme_Publication())
+        theme_Publication()+
+        theme(axis.text.x = element_text(angle = 45, hjust = 1)))
 
 gem2 <- gem %>% filter(!group %in% c("sodium", "proteins", "fat", 
                                     "carbohydrates", "kcal", "fibre")) %>% 
@@ -230,7 +233,7 @@ for(a in c(1:8)){
 
 compl <- bind_rows(ev_list)
 
-df4 <- compl %>% select(ROC_AUC_scores, outcome) %>% 
+df4 <- compl %>% dplyr::select(ROC_AUC_scores, outcome) %>% 
     mutate(
         auc = as.numeric(ROC_AUC_scores),
         outcome = as.factor(outcome)
@@ -243,7 +246,7 @@ df4 <- df4 %>% mutate(outcome2 = fct_reorder(outcome, .x = auc,
                       outcome2 = fct_recode(outcome2, "sex" = "women")
 )
 
-(pl5 <- df4 %>% filter(!outcome2 %in% c("active", "diabetes", "hyperchol")) %>% 
+(pl5 <- df4 %>% filter(!outcome2 %in% c("active", "diabetes", "hyperchol", "probiotics", "occupationmanual")) %>% 
         ggplot(., aes(x = outcome2, fill = outcome2, 
                       y = auc, groups = outcome2))+
         annotate("rect", xmin=-Inf, xmax=Inf,
@@ -255,7 +258,7 @@ df4 <- df4 %>% mutate(outcome2 = fct_reorder(outcome, .x = auc,
         geom_beeswarm(aes(color = outcome2), side = -1L, method = "swarm", 
                       alpha = 0.5, spacing = 0.8,
                       corral = "none", corral.width = 0.4) +
-        labs(title = 'Host factors - binary',
+        labs(title = 'Other covariates - binary',
              x = '', y = 'Area under the curve (AUC)', linetype = '', size = '') +
         scale_y_continuous(limits = c(0.40, 0.65))+
         scale_color_manual(guide = "none", values = c(pal_cosmic()(10)[c(9:10)],
@@ -264,15 +267,16 @@ df4 <- df4 %>% mutate(outcome2 = fct_reorder(outcome, .x = auc,
         scale_fill_manual(guide = "none", values = c(pal_cosmic()(10)[c(9:10)], 
                                                      "#CD7467", "#84A29C", 
                                                      "grey50")) +
-        theme_Publication())
+        theme_Publication()+
+        theme(axis.text.x = element_text(angle = 45, hjust = 1)))
 
 gem2 <- gem %>% filter(!group %in% c("diabetes", "bpmed", "active", "hyperchol")) %>% 
     mutate(mean_auc = as.numeric(mean_auc),
            mean_auc = case_when(mean_auc < 0.51 ~ NA, 
                                .default = mean_auc))
-df5 <- df4 %>% filter(!outcome2 %in% c("diabetes", "active", "hyperchol")) %>% droplevels(.)
+df5 <- df4 %>% filter(!outcome2 %in% c("diabetes", "active", "hyperchol", "probiotics", "occupationmanual")) %>% droplevels(.)
 
-for(i in 1:4){
+for(i in 1:3){
     pl5 <- pl5 + annotation_custom(
         grob = textGrob(label = str_c(as.character(gem2$mean_auc[i])),
                         hjust = 0, gp = gpar(cex = 0.8)),
@@ -284,6 +288,11 @@ for(i in 1:4){
 }
 pl5
 
-ggarrange(pl3, pl4, pl5, labels = c("A", "B", "C"), nrow = 2, ncol = 2)
-ggsave("results/covariatemodels/expvar_allfactors.pdf", width = 12, height = 12)
-ggsave("results/covariatemodels/expvar_allfactors.svg", width = 12, height = 12)
+ggarrange(pl3, pl4, pl5, labels = c("A", "B", "C"), nrow = 1, ncol = 3, widths = c(1,1,0.7))
+ggsave("results/covariatemodels/expvar_allfactors.pdf", width = 16, height = 6)
+ggsave("results/covariatemodels/expvar_allfactors.svg", width = 16, height = 6)
+
+
+ggarrange(ggarrange(pl3, NULL, widths = c(1,0.6)), ggarrange(pl4, pl5, widths = c(1,0.6), labels = c("B", "C")), labels = c("A", ""), nrow = 2, ncol = 1)
+ggsave("results/covariatemodels/expvar_allfactors_vertical.pdf", width = 7, height = 10)
+ggsave("results/covariatemodels/expvar_allfactors_vertical.svg", width = 7, height = 10)
