@@ -62,32 +62,32 @@ dfmb$ID <- rownames(mat)
 
 clin <- readRDS("data/clinicaldata.RDS")
 df <- left_join(clin, dfmb, by = "ID") 
-group <- df %>% select(Site, 68:ncol(.)) %>% 
+group <- df %>% dplyr::select(Site, 69:ncol(.)) %>% 
     pivot_longer(., 2:ncol(.), names_to = "ASV", values_to = "abundance") %>% 
     group_by(Site, ASV) %>% summarise(mean = mean(abundance)) %>% 
     pivot_wider(., id_cols = "ASV", names_from = "Site", values_from = "mean") %>% 
     filter(`Amsterdam` < `Rural Ghana` & `Urban Ghana` < `Rural Ghana`)
-group2 <- df %>% select(Site, 68:ncol(.)) %>% 
+group2 <- df %>% dplyr::select(Site, 69:ncol(.)) %>% 
     pivot_longer(., 2:ncol(.), names_to = "ASV", values_to = "abundance") %>% 
     group_by(Site, ASV) %>% summarise(mean = mean(abundance)) %>% 
     pivot_wider(., id_cols = "ASV", names_from = "Site", values_from = "mean") %>% 
     filter(`Rural Ghana` < `Amsterdam` & `Urban Ghana` < `Amsterdam`)
 df <- df %>%
-    mutate(across(c(68:ncol(.)), as.factor)) %>% 
-    mutate(across(c(68:ncol(.)), ~fct_recode(.x, "Present"="1", "Absent"="0")))
+    mutate(across(c(69:ncol(.)), as.factor)) %>% 
+    mutate(across(c(69:ncol(.)), ~fct_recode(.x, "Present"="1", "Absent"="0")))
 head(df)[1:5,1:5]
 colnames(df)
 
 bugs <- group$ASV
 len <- length(bugs)
-dfvenn <- df %>% select(bugs) %>% mutate(across(everything(.), 
+dfvenn <- df %>% dplyr::select(all_of(bugs)) %>% mutate(across(everything(.), 
                                                 ~ case_when(.x == "Absent" ~ 0, 
                                                             .x == "Present" ~ 1)))
                                           
-upset(as.data.frame(dfvenn), nsets=13, sets.bar.color = "#56B4E9", order.by = "freq")
+# upset(as.data.frame(dfvenn), nsets=13, sets.bar.color = "#56B4E9", order.by = "freq")
 
 dfbugs <- df %>% 
-    select(ID, Site, bugs) %>% 
+    dplyr::select(ID, Site, bugs) %>% 
     mutate(
         across(bugs, ~ case_when(.x == "Absent" ~ 1,
                                           .x == "Present" ~ 0)),
@@ -115,7 +115,7 @@ dfclin <- left_join(clin, dfbugs, by = c("ID", "Site")) %>%
            ),
            vanishing = fct_relevel(as.factor(vanishing), "vanishing", after=1L))
 names(dfclin)
-dfclin1 <- dfclin %>% select(Age, BMI, SBP, DBP, HbA1c, GFR, Site, vanishing)
+dfclin1 <- dfclin %>% dplyr::select(Age, BMI, SBP, DBP, HbA1c, GFR, Site, vanishing)
 units <- data.frame(
     var = names(dfclin1)[1:6],
     units = c("Years", "kg/m2", "mmHg", "mmHg","mmol/mol", "ml/min")
@@ -144,7 +144,7 @@ for(a in c(1:6)) {
 
 (plots_cont1 <- ggarrange(plotlist = plot_lin, nrow = 1, ncol = 6))
 
-dfclin2 <- dfclin %>% select(Obesity, Hypertension=HT, Diabetes=DM, Hyperchol, 
+dfclin2 <- dfclin %>% dplyr::select(Obesity, Hypertension=HT, Diabetes=DM, Hyperchol, 
                              Site, vanishing) %>% 
     mutate(across(1:4, ~case_when(.x == "No" ~ 0,
                                   .x == "Yes" ~ 1)),
@@ -207,26 +207,26 @@ for(a in c(1:4)) {
 (pl_vanish <- ggarrange(plots_cont1, plots_factors1, nrow = 2, heights = c(2,1)))
 ggsave("results/vanishblossom/vanishing_health.pdf", width = 8, height = 12)
 
-vanishingID <- dfclin %>% filter(vanishing == "absent") %>% select(ID, vanishing)
+vanishingID <- dfclin %>% dplyr::select(ID, vanishing)
 saveRDS(vanishingID, "data/ids_vanishing.RDS")
 
 
 #### blossom ####
 df <- df %>%
-    mutate(across(c(68:ncol(.)), as.factor)) %>% 
-    mutate(across(c(68:ncol(.)), ~fct_recode(.x, "Present"="1", "Absent"="0")))
+    mutate(across(c(69:ncol(.)), as.factor)) %>% 
+    mutate(across(c(69:ncol(.)), ~fct_recode(.x, "Present"="1", "Absent"="0")))
 head(df)[1:5,1:5]
 colnames(df)
 
 bugs2 <- group2$ASV
 len <- length(bugs2)
-dfvenn <- df %>% select(bugs2) %>% mutate(across(everything(.), 
+dfvenn <- df %>% dplyr::select(bugs2) %>% mutate(across(everything(.), 
                                                 ~ case_when(.x == "Absent" ~ 0, .x == "Present" ~ 1)))
 
-upset(as.data.frame(dfvenn), nsets=13, sets.bar.color = "#56B4E9", order.by = "freq")
+# upset(as.data.frame(dfvenn), nsets=13, sets.bar.color = "#56B4E9", order.by = "freq")
 
 dfbugs <- df %>% 
-    select(ID, Site, bugs2) %>% 
+    dplyr::select(ID, Site, bugs2) %>% 
     mutate(
         across(bugs2, ~ case_when(.x == "Absent" ~ 0,
                                  .x == "Present" ~ 1)),
@@ -254,7 +254,7 @@ dfclin <- left_join(clin, dfbugs, by = c("ID", "Site")) %>%
            ),
            blossom = fct_relevel(as.factor(blossom), "blossom", after=1L))
 names(dfclin)
-dfclin1 <- dfclin %>% select(Age, BMI, SBP, DBP, HbA1c, GFR, Site, blossom)
+dfclin1 <- dfclin %>% dplyr::select(Age, BMI, SBP, DBP, HbA1c, GFR, Site, blossom)
 units <- data.frame(
     var = names(dfclin1)[1:6],
     units = c("Years", "kg/m2", "mmHg", "mmHg","mmol/mol", "ml/min")
@@ -283,7 +283,7 @@ for(a in c(1:6)) {
 
 plots_cont2 <- ggarrange(plotlist = plot_lin, nrow = 1)
 
-dfclin2 <- dfclin %>% select(Obesity, Hypertension=HT, Diabetes=DM, Hyperchol, 
+dfclin2 <- dfclin %>% dplyr::select(Obesity, Hypertension=HT, Diabetes=DM, Hyperchol, 
                              Site, blossom) %>% 
     mutate(across(1:4, ~case_when(.x == "No" ~ 0,
                                   .x == "Yes" ~ 1)),
@@ -361,7 +361,7 @@ for(a in c(1:4)) {
 # (pl_blossom <- ggarrange(plots_cont, ggarrange(plots_factors, NULL), nrow = 2, heights = c(1,1)))
 # ggsave("results/blossom_health.pdf", width = 10, height = 10)
 
-blossomID <- dfclin %>% filter(blossom == "blossom") %>% select(ID, blossom)
+blossomID <- dfclin %>% dplyr::select(ID, blossom)
 saveRDS(blossomID, "data/ids_blossom.RDS")
 
 ggarrange(plots_cont1, plots_cont2, ggarrange(plots_factors1, plots_factors2),
