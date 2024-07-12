@@ -76,14 +76,15 @@ path_true <- 'rural_urban_dich/output_XGB_class_rural_urban_dich_2024_02_27__16-
 pl1 <- plot_feature_importance_color_microbiome(path_true, 10)
 grConvert::convertPicture(file.path(path_true,"Plot_AUC.pdf"), file.path(path_true,"auc.svg"))
 svg_grob <- svgparser::read_svg(file.path(path_true,"auc.svg"))
-plarr1 <- ggarrange(svg_grob, pl1, nrow = 1, widths = c(1.0, 1.3))
+plarr1 <- ggarrange(svg_grob, pl1, nrow = 1, widths = c(1.0, 1.4))
 plarr1b <- annotate_figure(plarr1, top = text_grob("Rural - Urban Ghana", color = "black", face = "bold", size = 14))
+
 ### Urban
 path_true <- 'urban_ams_dich/output_XGB_class_urban_ams_2024_02_27__22-38-49'
 pl2 <- plot_feature_importance_color_microbiome(path_true, 10)
 grConvert::convertPicture(file.path(path_true,"Plot_AUC.pdf"), file.path(path_true,"auc.svg"))
 svg_grob <- svgparser::read_svg(file.path(path_true,"auc.svg"))
-plarr2 <- ggarrange(svg_grob, pl2, nrow = 1, widths = c(1.0, 1.3))
+plarr2 <- ggarrange(svg_grob, pl2, nrow = 1, widths = c(1.0, 1.4))
 plarr2b <- annotate_figure(plarr2, top = text_grob("Urban Ghana - Amsterdam", color = "black", face = "bold", size = 14))
 
 ## Make prevalence plot
@@ -113,23 +114,23 @@ dfmb$ID <- rownames(mat)
 
 clin <- readRDS("data/clinicaldata.RDS")
 df <- left_join(clin, dfmb, by = "ID")
-vanish <- df %>% select(Site, 68:ncol(.)) %>% 
+vanish <- df %>% dplyr::select(Site, 69:ncol(.)) %>% 
     pivot_longer(., 2:ncol(.), names_to = "ASV", values_to = "abundance") %>% 
     group_by(Site, ASV) %>% summarise(mean = mean(abundance)) %>% 
     pivot_wider(., id_cols = "ASV", names_from = "Site", values_from = "mean") %>% 
     filter(`Amsterdam` < `Rural Ghana` & `Urban Ghana` < `Rural Ghana`)
-blossum <- df %>% select(Site, 68:ncol(.)) %>% 
+blossum <- df %>% dplyr::select(Site, 69:ncol(.)) %>% 
     pivot_longer(., 2:ncol(.), names_to = "ASV", values_to = "abundance") %>% 
     group_by(Site, ASV) %>% summarise(mean = mean(abundance)) %>% 
     pivot_wider(., id_cols = "ASV", names_from = "Site", values_from = "mean") %>% 
     filter(`Rural Ghana` < `Amsterdam` & `Urban Ghana` < `Amsterdam`)
-df <- df %>% mutate(across(c(68:ncol(.)), as.factor)) %>% 
-                mutate(across(c(68:ncol(.)), ~fct_recode(.x, "Present"="1", "Absent"="0")))
+df <- df %>% mutate(across(c(69:ncol(.)), as.factor)) %>% 
+                mutate(across(c(69:ncol(.)), ~fct_recode(.x, "Present"="1", "Absent"="0")))
     
 head(df)[1:5,1:5]
 
 
-dflong <- df %>% select(ID, Site, 68:ncol(.)) %>% pivot_longer(., 3:21, names_to = "ASV")
+dflong <- df %>% dplyr::select(ID, Site, 69:ncol(.)) %>% pivot_longer(., 3:21, names_to = "ASV")
 dfsum <- dflong %>% group_by(Site, ASV) %>% summarise(percentage = mean(value == "Present")*100) %>% 
     mutate(Tax = factor(ASV, levels = ASV, labels = make.unique(as.character(tax$Tax[match(ASV, tax$ASV)]))),
            Tax = fct_reorder(Tax, match(ASV, tax$ASV)),
@@ -137,11 +138,11 @@ dfsum <- dflong %>% group_by(Site, ASV) %>% summarise(percentage = mean(value ==
 
 tax2 <- tax %>% mutate(Family = case_when(duplicated(Family) ~ "",
                                           .default = Family),
-                       vanishblossum = case_when(
+                       vanishblossom = case_when(
                            ASV %in% vanish$ASV ~ "vanish",
-                           ASV %in% blossum$ASV ~ "blossum"
+                           ASV %in% blossum$ASV ~ "blossom"
                        ),
-                       vanishblossum = as.factor(vanishblossum)
+                       vanishblossom = as.factor(vanishblossom)
                        )
 (bar <- ggplot(tax, aes(x = Tax, y = 0, fill = Family)) +
     geom_tile() +
@@ -151,7 +152,7 @@ tax2 <- tax %>% mutate(Family = case_when(duplicated(Family) ~ "",
     theme_void() +
     scale_fill_manual(values = colfam, guide = "none"))
 
-(bar2 <- ggplot(tax2, aes(x = Tax, y = 0, fill = vanishblossum)) +
+(bar2 <- ggplot(tax2, aes(x = Tax, y = 0, fill = vanishblossom)) +
         labs(x = "", y = "")+
         geom_tile(alpha = 0.7) +
         coord_cartesian(clip = "off", ylim = c(-0.5,0.5))+
@@ -181,7 +182,7 @@ tax2 <- tax %>% mutate(Family = case_when(duplicated(Family) ~ "",
 (compl_anno <- annotate_figure(as.ggplot(comppl), 
                                top = text_grob("Prevalence of best predictors", 
                                                color = "black", face = "bold", size = 14)))
-# ggsave("results/vanishblossum/barplot.pdf", width = 12, height = 6)
+# ggsave("results/vanishblossom/barplot.pdf", width = 12, height = 6)
 
 ## Heatmap
 mat <- t(as(mb@otu_table, "matrix"))
@@ -194,7 +195,7 @@ dfmb <- as.data.frame(dfmb)
 dfmb$ID <- rownames(dfmb)
 df <- left_join(clin, dfmb, by = "ID")
 rownames(df) <- df$ID
-mbdf <- df %>% select(ID, Site, 68:ncol(.)) %>% 
+mbdf <- df %>% dplyr::select(ID, Site, 69:ncol(.)) %>% 
     arrange(Site)
 ordercol <- rev(order(colSums(mbdf[,4:ncol(mbdf)])))
 matdf <- as.matrix(mbdf[4:ncol(mbdf)])
@@ -218,8 +219,8 @@ hm <- Heatmap(matdf, name = "presence",
 
 (pl_total <- ggarrange(as.ggplot(hm), plarr1b, plarr2b, compl_anno, 
                        nrow = 4, labels = c("A", "B", "C", "D"),
-                       heights = c(0.5, 0.7, 0.7, 0.9)))
-ggsave("results/vanishblossom/presenceabsence.pdf", height = 25, width = 14)
+                       heights = c(0.7, 0.7, 0.7, 1.1)))
+ggsave("results/vanishblossom/presenceabsence.pdf", height = 18, width = 13)
 # ggsave("results/vanishblossom/presenceabsence.svg", height = 25, width = 14)
 
 # ## Data Model Rural - urban
