@@ -121,6 +121,7 @@ df_new <- df_compl %>%
            Occupation_binary = case_when(Occupation_binary == "manual" ~ "non manual",
                                          Occupation_binary == "non manual" ~ "manual"),
            Occupation_binary = as.factor(Occupation_binary),
+           Occupation_binary = fct_relevel(Occupation_binary, "manual", after = 1L),
            MoveEarlyLife = case_when(
                MoveEarlyLife == "I first lived in a village and moved to a city later on" 
                     ~ paste("VillageToCity"),
