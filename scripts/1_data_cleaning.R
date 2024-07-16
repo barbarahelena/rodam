@@ -118,6 +118,9 @@ df_new <- df_compl %>%
                !is.na(TimeLoc1) ~ TimeLoc1,
                !is.na(TimeLoc2) ~ TimeLoc2
            ),
+           Occupation_binary = case_when(Occupation_binary == "manual" ~ "non manual",
+                                         Occupation_binary == "non manual" ~ "manual"),
+           Occupation_binary = as.factor(Occupation_binary),
            MoveEarlyLife = case_when(
                MoveEarlyLife == "I first lived in a village and moved to a city later on" 
                     ~ paste("VillageToCity"),
