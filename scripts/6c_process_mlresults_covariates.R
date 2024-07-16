@@ -95,10 +95,8 @@ df4 <- compl %>% dplyr::select(`Explained Variance`, outcome) %>%
 dfmean <- df4 %>% group_by(outcome) %>% summarise(mean = mean(expvar)*100) %>% 
     arrange(desc(mean))
 df4 <- df4 %>% mutate(outcome2 = fct_reorder(outcome, .x = expvar,
-                                             .fun = median, .desc = TRUE),
-                    outcome2 = fct_recode(outcome2, "physical_activity"="physicalactivity"),
-                    outcome2 = fct_recode(outcome2, "stool_consistency" = "bristol")
-)
+                                             .fun = median, .desc = TRUE))
+
 
 (pl3 <- df4 %>% filter(outcome %in% c("sodium", "proteins", "fat", "carbohydrates", "kcal", "fibre")) %>% 
         ggplot(., aes(x = outcome2, fill = outcome2, 
@@ -144,7 +142,8 @@ pl3
 
 
 (pl4 <- df4 %>% filter(!outcome %in% c("sodium", "proteins", "fat", 
-                                       "carbohydrates", "kcal", "fibre")) %>% 
+                                       "carbohydrates", "kcal", "fibre", "bristol",
+                                       "physicalactivity")) %>% 
         ggplot(., aes(x = outcome2, fill = outcome2, 
                       y = expvar*100, groups = outcome2))+
         annotate("rect", xmin=-Inf, xmax=Inf,
@@ -191,8 +190,7 @@ ggarrange(pl3, pl4, labels = c("A", "B"), nrow = 1)
 ## Classification models
 # Making table
 ev_list <- list()
-groups <- c("women", "diabetes", "hyperchol", "hypertension", "bpmed", "probiotics",
-            "occupationmanual", "active")
+groups <- c("women", "diabetes", "hyperchol", "hypertension", "bpmed","occupationmanual", "active")
 for(g in groups){
     li <- list.files(path = file.path("covariatemodels", g))
     a <- str_detect(li, regex(g, ignore_case = T))
