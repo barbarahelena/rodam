@@ -7,8 +7,9 @@ library(tidyverse)
 library(ggplot2)
 library(ggpubr)
 library(ggsci)
-library(doParallel)
-registerDoParallel(6)
+library(aplot)
+# library(doParallel)
+# registerDoParallel(6)
 
 theme_Publication <- function(base_size=14, base_family="sans") {
     library(grid)
@@ -46,7 +47,7 @@ theme_Publication <- function(base_size=14, base_family="sans") {
 
 #### Load data ####
 phydata <- readRDS("data/phyloseq_sampledata.RDS")
-df_new <- rio::import("data/clinicaldata.RDS")
+df_new <- readRDS("data/clinicaldata.RDS")
 tab <- as.data.frame(t(as(phydata@otu_table, 'matrix')))
 tab_matrix <- t(as(phydata@otu_table, 'matrix'))
 
@@ -87,10 +88,30 @@ print('plotting..')
     labs(color = "", fill = "", title = "PCoA Bray-Curtis distance") +
     stat_ellipse(geom = "polygon", aes(color = Site, fill = Site), type = "norm", 
                  alpha = 0.1, linewidth = 1.0) + 
+    theme(legend.position = "top") +
     annotate("text", x= Inf, y = Inf, hjust = 1, vjust = 1,
              label = str_c("PERMANOVA: p = ", res1$`Pr(>F)`, ", r2 = ", format(round(res1$R2[1],3), nsmall = 3))))
 ggsave(braycurt, filename = "results/ordination/PCoA_BrayCurtis.pdf", device = "pdf", width = 5, height = 5)
 ggsave(braycurt, filename = "results/ordination/PCoA_BrayCurtis.svg", device = "svg", width = 5, height = 5)
+
+(plright <- ggplot(dbray, aes(x = Site, y = Axis.2, fill = Site)) +
+    geom_boxplot(outlier.shape = NA) +
+    scale_fill_manual(values = pal_cosmic()(4)[2:4], guide = "none") +
+    theme_transparent())
+(plbottom <- ggplot(dbray, aes(x = fct_rev(Site), y = Axis.1, fill = Site)) +
+        geom_boxplot() +
+        scale_fill_manual(values = pal_cosmic()(4)[2:4], guide = "none") +
+        theme_transparent()+
+        coord_flip())
+
+options("aplot_guides" = "keep")
+ap <- braycurt %>% 
+    insert_bottom(plbottom, height=.25) %>% 
+    insert_right(plright, width=.25)
+ap
+ggsave(ap, filename = "results/ordination/PCoA_BrayCurtis_box.pdf", device = "pdf", width = 7, height = 7)
+ggsave(ap, filename = "results/ordination/PCoA_BrayCurtis_box.svg", device = "svg", width = 7, height = 7)
+
 
 #### Weighted UniFrac ####
 print('Weighted UniFrac')
@@ -104,7 +125,7 @@ dfpc$ID <- rownames(dfpc)
 dfpc <- left_join(dfpc, df_new, by = 'ID') # add metadata / covariates
 
 print('PERMANOVA..')
-res2 <- adonis2(wunifrac ~ Site, data = dfanova) # PERMANOVA
+res2 <- adonis2(wunifrac ~ Site, data = dfpc) # PERMANOVA
 print(res2)
 
 print('plotting..')
@@ -116,24 +137,36 @@ print('plotting..')
                  linewidth = 1.0) + 
     scale_color_manual(values = pal_cosmic()(4)[c(2:4)]) +
     scale_fill_manual(values = pal_cosmic()(4)[c(2:4)], guide = "none") +
+    theme(legend.position = "top") +
     labs(title = 'PCoA Weighted UniFrac', color = "", fill = "",
          x = paste0('PCo1 (', round(expl_var_wu[1], digits = 1),'%)'),
-         y = paste0('PCo2 (', round(expl_var_wu[2], digits = 1),'%)')) +
+         y = paste0('PCo2 (', round(expl_var_wu[2], digits = 1),'%)'))+
     annotate("text", x= Inf, y = Inf, hjust = 1, vjust = 1,
-             label = str_c("PERMANOVA: p = ", res1$`Pr(>F)`, ", r2 = ", format(round(res2$R2[1],3), nsmall = 3))))
+             label = str_c("PERMANOVA: p = ", res2$`Pr(>F)`, ", r2 = ", format(round(res2$R2[1],3), nsmall = 3))))
 ggsave(unifracpl, filename = "results/ordination/PCoA_WeightedUnifrac.pdf", device = "pdf", width = 5, height = 5)
 ggsave(unifracpl, filename = "results/ordination/PCoA_WeightedUnifrac.svg", device = "svg", width = 5, height = 5)
 
-(unifrac_ab <- dfpc %>% 
-        ggplot(aes(Axis.1, Axis.2)) +
-        geom_point(aes(color = FecalSample_AB), size = 1, alpha = 0.7) +
-        xlab(paste0('PCo1 (', round(expl_var_wu[1], digits = 1),'%)')) +
-        ylab(paste0('PCo2 (', round(expl_var_wu[2], digits = 1),'%)')) +
-        theme_Publication() +
-        scale_color_manual(values = pal_cosmic()(3)) +
-        ggtitle('PCoA Weighted UniFrac') +
-        guides(fill = guide_legend(override.aes = list(shape = 21, size = 2))) +
-        labs(color = "Antibiotics use") +
-        stat_ellipse(aes(color = FecalSample_AB), type = "norm"))
-ggsave(unifrac_ab, filename = "results/ordination/PCoA_WeightedUnifrac_AB.pdf", device = "pdf", width = 5, height = 5)
-ggsave(unifrac_ab, filename = "results/ordination/PCoA_WeightedUnifrac_AB.svg", device = "svg", width = 5, height = 5)
+(plright <- ggplot(dfpc, aes(x = Site, y = Axis.2, fill = Site)) +
+        geom_boxplot(outlier.shape = NA) +
+        scale_fill_manual(values = pal_cosmic()(4)[2:4], guide = "none") +
+        theme_transparent())
+(plbottom <- ggplot(dfpc, aes(x = fct_rev(Site), y = Axis.1, fill = Site)) +
+        geom_boxplot() +
+        scale_fill_manual(values = pal_cosmic()(4)[2:4], guide = "none") +
+        theme_transparent()+
+        coord_flip())
+
+options("aplot_guides" = "keep")
+ap <- unifracpl %>% 
+    insert_bottom(plbottom, height=.25) %>% 
+    insert_right(plright, width=.25)
+ap
+
+## GGarrange for scripts 3a-3c
+fig2 <- ggarrange(pl_comp, pl_total, ggarrange(print(ap), NULL, nrow = 1),
+          nrow = 3, labels = c("A", "B", "C"),
+          heights = c(1.0,0.8,1.1))
+ggsave(fig2, filename = "results/ordination/Fig2ABC.pdf", device = "pdf", 
+       width = 13, height = 15)
+ggsave(fig2, filename = "results/ordination/Fig2ABC.svg", device = "svg", 
+       width = 13, height = 15)

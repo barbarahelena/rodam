@@ -80,8 +80,8 @@ make_input_folder_bin <- function(clindata, otutable, namevar, namefolder){
                     var == "Yes" ~ 1,
                     var == "No" ~ 0
                     )
-                )
-    # print(df$var)
+                ) %>% filter(!is.na(var))
+    print(df$var)
     mb <- prune_samples(sample_names(mb) %in% df$ID, mb)
     otu <- t(as(mb@otu_table, "matrix"))
     tk <- apply(otu, 2, function(x) sum(x > 10) > (0.3*length(x)))
@@ -102,6 +102,7 @@ make_input_folder_bin <- function(clindata, otutable, namevar, namefolder){
 
 ## Open dataframe
 df <- readRDS('data/clinicaldata.RDS') %>% 
+    filter(Site == "Amsterdam") %>% 
     mutate(
         Women = case_when(
             Sex == "Female" ~ "Yes",
@@ -110,10 +111,6 @@ df <- readRDS('data/clinicaldata.RDS') %>%
         Active_binary = case_when(
             Active == "Low level" ~ "No",
             Active == "Moderate level" | Active == "High level" ~ "Yes"
-        ),
-        Occupation_manual = case_when(
-            Occupation_binary == "manual" ~ "Yes",
-            Occupation_binary == "non manual" ~ "No"
         ),
         EarlyLifeUrban_binary = case_when(
             LocEarlyLife == "I lived in a village (rural)" ~ "No",
@@ -124,24 +121,26 @@ df <- readRDS('data/clinicaldata.RDS') %>%
 mb <- readRDS('data/phyloseq_sampledata.RDS')
 
 # Continuous variables (regression models)
-make_input_folder_cont(df, mb, "Age", "age")
-make_input_folder_cont(df, mb, "BMI", "bmi")
-make_input_folder_cont(df, mb, "TotalCalories", "kcal")
-make_input_folder_cont(df, mb, "Carbohydrates", "carbohydrates")
-make_input_folder_cont(df, mb, "Proteins", "proteins")
-make_input_folder_cont(df, mb, "Fibre", "fibre")
-make_input_folder_cont(df, mb, "Fat", "fat")
-make_input_folder_cont(df, mb, "SodiumInt", "sodium")
-make_input_folder_cont(df, mb, "CRP", "crp")
-make_input_folder_cont(df, mb, "LDL", "ldl")
-make_input_folder_cont(df, mb, "GFR", "gfr")
-make_input_folder_cont(df, mb, "BristolScale", "bristol")
-make_input_folder_cont(df, mb, "PhysAct", "physicalactivity")
+make_input_folder_cont(df, mb, "Age", "covariatemodels_amsterdam/age")
+make_input_folder_cont(df, mb, "BMI", "covariatemodels_amsterdam/bmi")
+make_input_folder_cont(df, mb, "TotalCalories", "covariatemodels_amsterdam/kcal")
+make_input_folder_cont(df, mb, "Carbohydrates", "covariatemodels_amsterdam/carbohydrates")
+make_input_folder_cont(df, mb, "Proteins", "covariatemodels_amsterdam/proteins")
+make_input_folder_cont(df, mb, "Fibre", "covariatemodels_amsterdam/fibre")
+make_input_folder_cont(df, mb, "Fat", "covariatemodels_amsterdam/fat")
+make_input_folder_cont(df, mb, "SodiumInt", "covariatemodels_amsterdam/sodium")
+make_input_folder_cont(df, mb, "CRP", "covariatemodels_amsterdam/crp")
+make_input_folder_cont(df, mb, "LDL", "covariatemodels_amsterdam/ldl")
+make_input_folder_cont(df, mb, "GFR", "covariatemodels_amsterdam/gfr")
+make_input_folder_cont(df, mb, "PhysAct", "covariatemodels_amsterdam/physicalactivity")
+make_input_folder_cont(df, mb, "FramRisk", "covariatemodels_amsterdam/framingham")
 
 # Binary variables (classification models)
-make_input_folder_bin(df, mb, "Women", "women")
-make_input_folder_bin(df, mb, "FecalSample_Prob", "probiotics")
-make_input_folder_bin(df, mb, "AntiHT", "bpmed")
-make_input_folder_bin(df, mb, "Occupation_manual", "occupationmanual")
-make_input_folder_bin(df, mb, "Active_binary", "active")
-make_input_folder_bin(df, mb, "EarlyLifeUrban_binary", "earlylifeurban")
+make_input_folder_bin(df, mb, "Women", "covariatemodels_amsterdam/women")
+make_input_folder_bin(df, mb, "HT", "covariatemodels_amsterdam/hypertension")
+make_input_folder_bin(df, mb, "DM", "covariatemodels_amsterdam/diabetes")
+make_input_folder_bin(df, mb, "Hyperchol", "covariatemodels_amsterdam/hyperchol")
+make_input_folder_bin(df, mb, "AntiHT", "covariatemodels_amsterdam/bpmed")
+make_input_folder_bin(df, mb, "Active_binary", "covariatemodels_amsterdam/active")
+make_input_folder_bin(df, mb, "EarlyLifeUrban_binary", "covariatemodels_amsterdam/earlylifeurban")
+

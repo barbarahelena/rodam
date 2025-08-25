@@ -36,7 +36,7 @@ plot_features_tests_class <- function(input_path, output_path, top_n=10, labels=
     r <- r %>% arrange(-RelFeatImp)
     input_data <- rio::import(file.path(input_path, 'X_data.txt'))
     feature_names <- read.csv(file.path(input_path, 'feat_ids.txt'), sep = '\t', header = F)
-    tax <- readRDS("data/tax_table.RDS")
+    tax <- readRDS("data/taxtable.RDS")
     names(input_data) <- feature_names$V1
     if(top_n > ncol(input_data)){
         cat('\n\nRequested no. of features is higher than total number of features in model.\n
@@ -113,7 +113,7 @@ plot_features_tests_top <- function(input_path, output_path, top_n=20, nrow=4, l
     input_data <- rio::import(file.path(input_path, 'X_data.txt'))
     feature_names <- read.csv(file.path(input_path, 'feat_ids.txt'), sep = '\t', header = F)
     names(input_data) <- feature_names$V1
-    tax <- readRDS("data/tax_table.RDS")
+    tax <- readRDS("data/taxtable.RDS")
     if(top_n > ncol(input_data)){
         cat('\n\nRequested no. of features is higher than total number of features in model.\nShowing all features in model.\n\n')
         top_n <- ncol(input_data)
@@ -283,7 +283,7 @@ plot_features_tests_reg <- function(input_path, output_path, top_n=10, outcome_n
     feature_names <- read.csv(file.path(input_path, 'feat_ids.txt'), sep = '\t', header = F)
     names(input_data) <- feature_names$V1
     y <- rio::import(file.path(input_path, 'y_reg.txt'))
-    tax <- readRDS("data/tax_table.RDS")
+    tax <- readRDS("data/taxtable.RDS")
     dd <- input_data %>% dplyr::select(any_of(features_tk$FeatName))
     dd$y <- as.numeric(as.character(y$V1))
     
@@ -292,7 +292,7 @@ plot_features_tests_reg <- function(input_path, output_path, top_n=10, outcome_n
         names(df)[1] <- 'Feature'
         tax_asv <- tax$Tax[match(colnames(dd)[j], tax$ASV)]
         cc <- cor.test(df$Feature, df$y, method = 'spearman')
-        pl <- ggplot(df, aes(x=Feature, y=y))+
+        pl <- ggplot(df, aes(x=Feature+1, y=y))+
             geom_point(color='black', fill=pal_lancet()(2)[1], shape=21, alpha = 0.7)+
             geom_smooth(method='lm', color=pal_lancet()(2)[2])+
             scale_x_log10() +
@@ -357,13 +357,13 @@ plot_features_top_n_reg <- function(input_path, output_path, top_n=20, nrow=4, o
     feature_names <- read.csv(file.path(input_path, 'feat_ids.txt'), sep = '\t', header = F)
     names(input_data) <- feature_names$V1 
     y <- rio::import(file.path(input_path, 'y_reg.txt'))
-    tax <- readRDS("data/tax_table.RDS")
+    tax <- readRDS("data/taxtable.RDS")
     dd <- input_data %>% dplyr::select(any_of(features_tk$FeatName)) %>% 
         mutate(y = as.numeric(as.character(y$V1)))
     colnames(dd) <- c(make.unique(tax$Tax[match(colnames(dd), tax$ASV)])[1:top_n], "y")
     df <- dd %>% pivot_longer(-y, names_to = 'features', values_to = 'values') %>% 
         mutate(features = as.factor(features))
-    pl <- ggplot(df, aes(x=values, y=y))+
+    pl <- ggplot(df, aes(x=values+1, y=y))+
         geom_point(fill=pal_lancet()(1), color='black', shape=21, alpha = 0.7)+
         geom_smooth(method='lm', color=pal_lancet()(2)[2])+
         scale_x_log10()+
@@ -508,7 +508,7 @@ plot_feature_importance_class <- function(path_true, top_n){
                  high = '#034E7B')
     r <- rio::import(file.path(path_true, 'feature_importance.txt'))
     r <- r %>% arrange(-RelFeatImp)
-    tax <- readRDS("data/tax_table.RDS")
+    tax <- readRDS("data/taxtable.RDS")
     r$Tax <- tax$Tax[match(r$FeatName, tax$ASV)]
     r <- r[1:top_n, ]
     r <- r %>% mutate(Tax = factor(make.unique(Tax), levels = rev(make.unique(Tax))))
@@ -551,11 +551,12 @@ plot_feature_importance_color_microbiome <- function(path_true, top_n){
                     panel.grid.minor = element_blank(),
                     legend.key = element_rect(colour = NA),
                     legend.position = "bottom",
+                    legend.text = element_text(size = rel(0.7)),
                     # legend.direction = "horizontal",
-                    legend.key.size= unit(0.2, "cm"),
+                    legend.key.size= unit(0.1, "cm"),
                     legend.spacing  = unit(0, "cm"),
                     # legend.title = element_text(face="italic"),
-                    plot.margin=unit(c(10,5,5,5),"mm"),
+                    plot.margin=unit(c(10,5,5,0),"mm"),
                     strip.background=element_rect(colour="#f0f0f0",fill="#f0f0f0"),
                     strip.text = element_text(face="bold")
             ))
@@ -563,23 +564,61 @@ plot_feature_importance_color_microbiome <- function(path_true, top_n){
     
     r <- rio::import(file.path(path_true, 'feature_importance.txt'))
     r <- r %>% arrange(-RelFeatImp)
-    a <- readRDS("data/tax_table.RDS")
+    a <- readRDS("data/taxtable.RDS")
     a <- a %>% dplyr::select(FeatName = ASV, Family, Tax)
     ra <- left_join(r, a, by='FeatName') %>% slice(1:top_n) %>% 
-        mutate(Tax = make.unique(Tax)) %>% 
+        mutate(Tax = make.unique(Tax),
+               Tax = case_when(
+                   Tax == "Clostridium sensu stricto 1 celatum/disporicum/saudiense" ~
+                       "Clostridium sensu stricto 1 cel/disp/saud",
+                   .default = Tax
+               ),
+               Family = case_when(
+                   is.na(Family) ~ "Unknown family",
+                   .default = Family
+               )) %>% 
         droplevels(.) %>% 
         mutate(across(c("Family", "Tax"), as.factor), 
                across(c("Family", "Tax"), fct_inorder),
-               Tax = fct_rev(Tax))
-    colpal <- c("#00468BFF", "#ED0000FF", "#0099B4FF","gold",
-                "lightblue1","darkgreen","#AD002AFF","mediumpurple1",
-                "#42B540FF", "maroon3", "darkorchid4", "darkorange1",
-                "grey40", "brown", "lightgrey", "black")
-    colfam <- setNames(colpal[1:length(levels(ra$Family))], levels(ra$Family))
+               Tax = fct_rev(Tax),
+               )
+    print(levels(ra$Family))
+    colfam <- list(
+        "[Eubacterium] coprostanoligenes group" = "#6F69A9",
+        "Acidaminococcaceae" = "#B18B88",
+        "Anaerovoracaceae" = "#4E7B85",
+        "Bacteroidaceae" = "#2F509E",
+            "Bifidobacteriaceae" = "#DC9445",
+        "Butyricicoccaceae" = "#994276",
+            "Christensenellaceae" = "#358DB9",
+            "Clostridiaceae" = "#BE4A90",
+        "Eggerthellaceae" = "#E5614C",
+        "Enterobacteriaceae" = "#8C57A2",
+        "Erysipelatoclostridiaceae" = "#665549",
+        "Erysipelotrichaceae" = "#97A1A7",
+        "Fusobacteriaceae" = "#71A163",
+            "Prevotellaceae" = "#4CA56E",
+            "Lactobacillaceae" = "#2F509E",
+            "Lachnospiraceae" = "#CD7467",
+        "Methanobacteriaceae" = "#A85B67",
+            "Oscillospiraceae" = "#77567D",
+        "Peptostreptococcaceae" = "#82581F",
+            "Rikenellaceae" = "#2E2A2B",
+        "Ruminococcaceae" = "#CF4E9C",
+        "Selenomonadaceae" = "#A69A54",
+            "Streptococcaceae" = "#4F7CB2",
+            "Succinivibrionaceae" = "#84A29C",
+        "Sutterellaceae" = "#4A5273",
+        "Tannerellaceae" = "#5AA584",
+        "Veillonellaceae" = "#DC9445",
+            "Unknown family" = "#58545E"
+    )
+
     pl <- ggplot(data=ra, aes(y=RelFeatImp, x=Tax, fill=Family)) + 
         theme_Publication() +
-        geom_bar(stat="identity", alpha=0.8) +
-        scale_fill_manual(values = colfam)+
+        geom_bar(stat="identity") +
+        scale_fill_manual(values = colfam,
+                          guide = guide_legend(ncol = 4))+
         coord_flip() +
         labs(y = 'Relative Importance %', x='', 
              title = 'Relative importance',
@@ -589,8 +628,8 @@ plot_feature_importance_color_microbiome <- function(path_true, top_n){
         theme(legend.key.size= unit(0.5, "cm")) +
         theme(legend.position = 'bottom', legend.justification = 'center')
     pl
-    ggsave(pl, path = path_true, filename = 'plot_Feature_Importance_Microbiome_color.pdf', 
-           device = 'pdf', width = 11, height = 7)
-    ggsave(pl, path = path_true, filename = 'plot_Feature_Importance_Microbiome_color.svg', 
-           device = 'svg', width = 11, height = 7)
+    # ggsave(pl, path = path_true, filename = 'plot_Feature_Importance_Microbiome_color.pdf', 
+    #        device = 'pdf', width = 11, height = 7)
+    # ggsave(pl, path = path_true, filename = 'plot_Feature_Importance_Microbiome_color.svg', 
+    #        device = 'svg', width = 11, height = 7)
 }

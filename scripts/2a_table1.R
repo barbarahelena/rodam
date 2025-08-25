@@ -14,12 +14,14 @@ df_new <- rio:: import("data/clinicaldata.RDS")
 ## Table 1
 Table1 <- CreateTableOne(data = df_new, 
                          vars = c("Age", "Sex", "BMI", "CurrSmoking",
-                                  "AlcoholIntake", "TotalCalories", "Fibre",
-                                  "SBP", "DBP", "TC", "LDL", "HbA1c",
+                                  "SBP", "DBP", "TC", "LDL", "HbA1c", "GFR", "CRP",
                                   "HT", "AntiHT", "DM", "DMMed", "LipidLowering",
-                                  "FecalSample_AB", "FecalSample_Prob", "BristolScale"), 
-                         strata = c("Site"))
-Table1 <- print(Table1, contDigits = 1, missing = TRUE, nonnormal = "BristolScale")
+                                  "FecalSample_AB", "FecalSample_Prob", "BristolScale",
+                                  "TotalCalories", "Carbohydrates", "Proteins",  
+                                  "Fat", "Fibre", "SodiumInt", "Alcohol", "AlcoholBin",
+                                  "PhysAct", "Occupation_binary"), 
+                         strata = c("Site"), addOverall = TRUE)
+Table1 <- print(Table1, contDigits = 1, missing = TRUE, nonnormal = c("BristolScale", "PhysAct"))
 Table1 <- as.data.frame(Table1)
 table1 <- Table1 %>% mutate(across(everything(.), ~trimws(.x, which = "both")))
 write.csv2(table1, "results/table1/table1.csv")
